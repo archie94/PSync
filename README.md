@@ -1,2 +1,2 @@
 # PSync
-A Python-based Sync Tool for Challenged Networks
+A Android-based Sync Tool for Challenged Networks
