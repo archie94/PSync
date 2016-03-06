@@ -1,0 +1,14 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" tools:context=".Discoverer">
+    <item android:id="@+id/action_settings" android:title="@string/action_settings"
+        android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/menu_register" android:title="Register"
+        android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/menu_unregister" android:title="Unregister"
+        android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/menu_discover" android:title="Discover Peers"
+        android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/menu_connect" android:title="Connect"
+        android:orderInCategory="100" app:showAsAction="never" />
+</menu>
