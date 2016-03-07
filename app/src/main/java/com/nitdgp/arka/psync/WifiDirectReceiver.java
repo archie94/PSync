@@ -10,17 +10,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.NetworkInfo;
 import android.net.wifi.p2p.WifiP2pDevice;
-import android.net.wifi.p2p.WifiP2pDeviceList;
-import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A BroadcastReceiver class to listen to the change in System's WiFi P2P state
  */
-class WifiDirectReceiver extends BroadcastReceiver implements WifiP2pManager.PeerListListener, WifiP2pManager.ConnectionInfoListener{
+class WifiDirectReceiver extends BroadcastReceiver {
 
     private WifiP2pManager wifiP2pManager;
     private WifiP2pManager.Channel wifiP2pChannel;
@@ -29,8 +24,6 @@ class WifiDirectReceiver extends BroadcastReceiver implements WifiP2pManager.Pee
     private boolean isWifiDirectEnabled = false;
     private IntentFilter intentFilter = null;
 
-    private List peers = new ArrayList();
-    private WifiP2pDevice[] wifiP2pDevices;
 
     public WifiDirectReceiver(WifiP2pManager wifiP2pManager, WifiP2pManager.Channel wifiP2pChannel, Discoverer discoverer) {
         super();
@@ -87,28 +80,41 @@ class WifiDirectReceiver extends BroadcastReceiver implements WifiP2pManager.Pee
         } else {
             // Wifi Direct is disabled on device
             isWifiDirectEnabled = false;
+            discoverer.resetData();
         }
     }
 
     private void handleP2pPeersChanged(Intent intent) {
         /*
-        Request the actual list of peers
+        Request the actual list of peers from wifi p2p manager
          */
-        wifiP2pManager.requestPeers(wifiP2pChannel, this);
+        if(wifiP2pManager != null ) {
+            wifiP2pManager.requestPeers(wifiP2pChannel,
+                    (WifiP2pManager.PeerListListener) discoverer.getFragmentManager().findFragmentById(R.id.discoverer_frag_list));
+        }
     }
 
     private void handleP2pConnectionChanged(Intent intent) {
         NetworkInfo networkInfo = intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
         if(networkInfo != null && networkInfo.isConnected()) {
-            wifiP2pManager.requestConnectionInfo(wifiP2pChannel, this);
+            /*
+             we are connected with the other device, request connection
+             info to find group owner IP
+            */
+            DeviceDetailFragment fragment = (DeviceDetailFragment) discoverer
+                    .getFragmentManager().findFragmentById(R.id.discoverer_frag_detail);
+            wifiP2pManager.requestConnectionInfo(wifiP2pChannel, fragment);
         }else {
             // display a toast that network is lost
+            discoverer.displayToast("Network lost");
+            discoverer.resetData();
         }
     }
 
     private void handleP2pThisDeviceChanged(Intent intent) {
-        WifiP2pDevice thisDevice = intent.getParcelableExtra(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
-        // Log state of device here
+        DeviceListFragment fragment =
+                (DeviceListFragment)discoverer.getFragmentManager().findFragmentById(R.id.discoverer_frag_list);
+        fragment.updateThisDevice((WifiP2pDevice)intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE));
     }
 
     private IntentFilter getIntentFilter() {
@@ -124,47 +130,5 @@ class WifiDirectReceiver extends BroadcastReceiver implements WifiP2pManager.Pee
             intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
         }
         return intentFilter;
-    }
-
-    public WifiP2pDevice getFirstDevice(){
-        if(wifiP2pDevices != null) {
-            return wifiP2pDevices[0];
-        }else{
-            return null;
-        }
-    }
-    public List getPeerList(){
-        return peers;
-    }
-
-    @Override
-    public void onPeersAvailable(WifiP2pDeviceList peersList) {
-        if(peersList!=null && peersList.getDeviceList()!=null && peersList.getDeviceList().size()>0) {
-            wifiP2pDevices = new WifiP2pDevice[peersList.getDeviceList().size()];
-            wifiP2pDevices = peersList.getDeviceList().toArray(wifiP2pDevices);
-        }
-        else{
-            wifiP2pDevices = null;
-        }
-        // Out with the old, in with the new
-        peers.clear();
-        peers.addAll(peersList.getDeviceList());
-
-        /*
-            Notify the adapter view for the change
-         */
-
-    }
-
-    @Override
-    public void onConnectionInfoAvailable(WifiP2pInfo info) {
-        if(info.groupFormed){
-            if(info.isGroupOwner){
-                // open a server socket
-            } else{
-                // open a client socket to info.groupowner address
-            }
-
-        }
     }
 }
