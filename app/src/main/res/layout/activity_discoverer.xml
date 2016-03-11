@@ -1,26 +1,42 @@
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:id="@+id/linearLayout1"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-        <fragment
-            class="com.nitdgp.arka.psync.DeviceListFragment"
-            android:id="@+id/discoverer_frag_list"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-            <!-- Preview: layout=@layout/row_devices -->
-        </fragment>
-        <fragment
-            class="com.nitdgp.arka.psync.DeviceDetailFragment"
-            android:id="@+id/discoverer_frag_detail"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-            <!-- Preview: layout=@layout/device_detail -->
-        </fragment>
-    </LinearLayout>
-</LinearLayout>
+
+
+
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:id="@+id/editText_broadcast_message" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Broadcast"
+        android:id="@+id/btn_broadcast"
+        android:layout_below="@+id/editText_broadcast_message"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/text_received_message"
+        android:layout_below="@+id/btn_broadcast"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentStart="true"
+        android:hint="Received Message" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Listen"
+        android:id="@+id/btn_start_client"
+        android:layout_below="@+id/text_received_message"
+        android:layout_centerHorizontal="true" />
+
+</RelativeLayout>
