@@ -9,8 +9,6 @@ import android.net.DhcpInfo;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.Looper;
-import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 import android.widget.Button;
@@ -19,6 +17,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -37,9 +36,10 @@ public class Discoverer extends ActionBarActivity  {
     Button startClient;
     android.os.Handler handler;
 
-    private static final String SERVER_IP = "192.168.1.255";
+    private static final String SERVER_IP = "192.168.43.255";
     private static int PORT = 4446;
     private static boolean serverRunning = false;
+    private static boolean clientRunning = false;
     InetAddress group ;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,12 +64,19 @@ public class Discoverer extends ActionBarActivity  {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        /*
+        If device is connected to a hotspot it will only receive the message
+        If device is not connected assume it has hosted the hotspot -- it will broadcast the message
+         */
         if(networkInfo.isConnected()){
             displayToast("Connected via wifi");
             startClient.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    new ClientThread().start();
+                    if(!clientRunning) {
+                        new ClientThread().start();
+                        clientRunning = true;
+                    }
                 }
             });
         }else{
@@ -78,30 +85,16 @@ public class Discoverer extends ActionBarActivity  {
                 @Override
                 public void onClick(View v) {
 
-                    if (!serverRunning) {
+                   // if (!serverRunning) {
+                    try {
                         new ServerThread( broadcastMessage.getText().toString()).start();
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
                     }
+                    //}
                 }
             });
         }
-        /*broadcast.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                if (!serverRunning) {
-                    displayToast("Starting server");
-                    new ServerThread(broadcastMessage.getText().toString()).start();
-                }
-            }
-        });
-        displayToast("Starting client");
-        new ClientThread().start();*/
-       handler = new android.os.Handler(Looper.getMainLooper()){
-           @Override
-           public void handleMessage(Message msg) {
-               displayToast(msg.toString());
-           }
-       };
     }
     public InetAddress getBroadcastAddress()throws IOException {
         WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
@@ -128,9 +121,8 @@ public class Discoverer extends ActionBarActivity  {
         byte buffer[];
         DatagramPacket datagramPacket;
 
-        public ServerThread(String s) {
-            buffer = new byte[256];
-            buffer = s.getBytes();
+        public ServerThread(String s) throws UnsupportedEncodingException {
+
         }
 
         @Override
@@ -138,6 +130,8 @@ public class Discoverer extends ActionBarActivity  {
             try {
                 datagramSocket = new DatagramSocket(PORT);
                 datagramSocket.setBroadcast(true);
+                buffer = new byte[15000];
+                buffer = "Hello from here".getBytes("UTF-8");
                 Discoverer.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -146,18 +140,14 @@ public class Discoverer extends ActionBarActivity  {
                 });
 
 
-                    datagramPacket = new DatagramPacket(buffer, buffer.length, group, PORT);
-                    datagramSocket.send(datagramPacket);
-                    Discoverer.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(Discoverer.this, "Server : packet send", Toast.LENGTH_LONG).show();
-                        }
-                    });
-                    //Toast.makeText(getActivity(), "Sending ", Toast.LENGTH_SHORT).show();
-
-
-
+                datagramPacket = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(SERVER_IP), PORT);
+                datagramSocket.send(datagramPacket);
+                Discoverer.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(Discoverer.this, "Server : packet send", Toast.LENGTH_LONG).show();
+                    }
+                });
             } catch (SocketException e) {
                 e.printStackTrace();
             } catch(UnknownHostException e){
@@ -168,19 +158,27 @@ public class Discoverer extends ActionBarActivity  {
         }
             //datagramSocket.close();
             //serverRunning = false;
-        }
+    }
 
     public class ClientThread extends Thread{
 
         MulticastSocket multicastSocket;
         DatagramPacket datagramPacket;
         byte buffer[];
+        DatagramSocket datagramSocket;
 
         @Override
         public void run() {
+            WifiManager wifiManager;
+            wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+            WifiManager.MulticastLock multicastLock = wifiManager.createMulticastLock("lock");
+            multicastLock.acquire();
             try{
-                multicastSocket = new MulticastSocket(PORT);
-                multicastSocket.setBroadcast(true);
+
+                /*multicastSocket = new MulticastSocket(PORT);
+                multicastSocket.setBroadcast(true);*/
+                datagramSocket = new DatagramSocket(PORT, InetAddress.getByName("0.0.0.0"));
+                datagramSocket.setBroadcast(true);
 
                 Discoverer.this.runOnUiThread(new Runnable() {
                     @Override
@@ -189,20 +187,35 @@ public class Discoverer extends ActionBarActivity  {
                     }
                 });
                 while(true) {
-                    multicastSocket.joinGroup(group);
+                     // multicastSocket.joinGroup(group);
                     Discoverer.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             Toast.makeText(Discoverer.this, "Client : group joined", Toast.LENGTH_LONG).show();
                         }
                     });
-                    buffer = new byte[256];
+                    buffer = new byte[15000];
                     datagramPacket = new DatagramPacket(buffer, buffer.length);
-                    multicastSocket.receive(datagramPacket);
-                    multicastSocket.leaveGroup(group);
+                    /*multicastSocket.receive(datagramPacket);
+                    multicastSocket.leaveGroup(group);*/
+                    datagramSocket.receive(datagramPacket);
+                    Discoverer.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Toast.makeText(Discoverer.this, "Msg Received " + new String(datagramPacket.getData(),"UTF-8"), Toast.LENGTH_LONG).show();
+                            } catch (UnsupportedEncodingException e) {
+                                e.printStackTrace();
+                            }
+                            try {
+                                receivedMessage.setText("Received msg : " + new String(datagramPacket.getData(),"UTF-8"));
+                            } catch (UnsupportedEncodingException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
 
                 }
-                //Toast.makeText(, "Received : " + buffer.toString(), Toast.LENGTH_SHORT).show();
 
             }catch (UnknownHostException e){
 
@@ -221,7 +234,9 @@ public class Discoverer extends ActionBarActivity  {
                     }
                 });
             }
-            multicastSocket.close();
+            datagramSocket.close();
+            //multicastSocket.close();
+            multicastLock.release();
         }
     }
     public void displayToast(String msg){
