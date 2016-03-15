@@ -24,8 +24,24 @@
     <ListView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/listView_peer_list"
+        android:id="@android:id/list"
+        android:layout_below="@+id/btn_stop_server"
+        android:layout_alignEnd="@+id/btn_start_client" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Stop Listening"
+        android:id="@+id/btn_stop_client"
         android:layout_below="@+id/btn_start_client"
-        android:layout_centerHorizontal="true" />
+        android:layout_alignEnd="@+id/btn_start_client" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Stop Broadcast"
+        android:id="@+id/btn_stop_server"
+        android:layout_below="@+id/btn_broadcast"
+        android:layout_alignParentStart="true" />
 
 </RelativeLayout>
