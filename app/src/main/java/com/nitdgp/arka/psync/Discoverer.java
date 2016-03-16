@@ -10,7 +10,6 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -61,39 +60,41 @@ public class Discoverer extends ActionBarActivity  {
          */
         ConnectivityManager connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        /*
-        If device is connected to a hotspot it will only receive the message
-        If device is not connected assume it has hosted the hotspot -- it will broadcast the message
-         */
-        final ServerThread server = new ServerThread() ;
-        final ClientThread client = new ClientThread();
-        final Thread[] thread = new Thread[2];
         if(networkInfo.isConnected()){
             displayToast("Connected via wifi");
-            listen.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if(!clientRunning) {
-                        thread[1] = new Thread(client);
-                        thread[1].start();
-                        clientRunning = true;
-                    }
-                }
-            });
         }else{
             displayToast("Not connected");
-            broadcast.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                   if (!serverRunning) {
-                       thread[0] = new Thread(server);
-                       thread[0].start();
-                       serverRunning = true;
-                   }
-                }
-            });
         }
+
+        final ServerThread server = new ServerThread() ;
+        final ClientThread client = new ClientThread(this);
+        final Thread[] thread = new Thread[2];
+
+        /*
+        Broadcast message only if device is not listening for message
+        Listen for message only if device itself not broadcasting
+         */
+        listen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!clientRunning && !serverRunning) {
+                    thread[1] = new Thread(client);
+                    thread[1].start();
+                    clientRunning = true;
+                }
+            }
+        });
+        broadcast.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if (!serverRunning && !clientRunning) {
+                    thread[0] = new Thread(server);
+                    thread[0].start();
+                    serverRunning = true;
+                }
+            }
+        });
         stopBroadcast.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -184,10 +185,12 @@ public class Discoverer extends ActionBarActivity  {
         DatagramSocket datagramSocket;
         volatile boolean exit;
         HashMap<String, Integer> peerList;
+        Context context;
 
-        public ClientThread(){
+        public ClientThread(Context context){
             exit = false;
             peerList = new HashMap<String, Integer>();
+            this.context = context;
         }
 
         @Override
@@ -285,15 +288,18 @@ public class Discoverer extends ActionBarActivity  {
             Discoverer.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    List<String > peer = new ArrayList<String>();
-                    for(String s : peerList.keySet()) {
-                        peerList.put(s, peerList.get(s)+1);
+                    List<String> peer = new ArrayList<String>();
+                    List<Integer> counter = new ArrayList<Integer>();
+                    for (String s : peerList.keySet()) {
+                        peerList.put(s, peerList.get(s) + 1);
                         peer.add(s);
+                        counter.add(peerList.get(s));
                     }
-                    ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(Discoverer.this, android.R.layout.simple_list_item_1, peer);
-                    peerListView.setAdapter(arrayAdapter);
+                    PeerListView peerListRow = new PeerListView(context, peer, counter);
+                    peerListView.setAdapter(peerListRow);
                 }
             });
+
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
