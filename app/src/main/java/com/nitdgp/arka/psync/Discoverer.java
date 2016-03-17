@@ -37,6 +37,7 @@ public class Discoverer extends ActionBarActivity  {
     Button listen;
     Button stopListen;
     ListView peerListView;
+    volatile HashMap<String, Integer> peerList;
 
     private static final String SERVER_IP = "192.168.43.255";
     private static int PORT = 4446;
@@ -55,6 +56,7 @@ public class Discoverer extends ActionBarActivity  {
         stopBroadcast = (Button)findViewById(R.id.btn_stop_server);
         stopListen = (Button)findViewById(R.id.btn_stop_client);
         peerListView = (ListView)findViewById(android.R.id.list);
+        peerList = new HashMap<String, Integer>();
         /*
          * Check if device is connected via wifi
          */
@@ -66,8 +68,11 @@ public class Discoverer extends ActionBarActivity  {
             displayToast("Not connected");
         }
 
+        UpdatePeerListViewThread updateView = new UpdatePeerListViewThread(this);
+        new Thread(updateView).start();
+
         final ServerThread server = new ServerThread() ;
-        final ClientThread client = new ClientThread(this);
+        final ClientThread client = new ClientThread();
         final Thread[] thread = new Thread[2];
 
         /*
@@ -77,7 +82,7 @@ public class Discoverer extends ActionBarActivity  {
         listen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!clientRunning && !serverRunning) {
+                if(!clientRunning /*&& !serverRunning*/) {
                     thread[1] = new Thread(client);
                     thread[1].start();
                     clientRunning = true;
@@ -87,8 +92,7 @@ public class Discoverer extends ActionBarActivity  {
         broadcast.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                if (!serverRunning && !clientRunning) {
+                if (!serverRunning /*&& !clientRunning*/) {
                     thread[0] = new Thread(server);
                     thread[0].start();
                     serverRunning = true;
@@ -107,7 +111,7 @@ public class Discoverer extends ActionBarActivity  {
         stopListen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(clientRunning) {
+                if (clientRunning) {
                     client.stop();
                     //clientRunning = false;
                 }
@@ -131,15 +135,9 @@ public class Discoverer extends ActionBarActivity  {
         @Override
         public void run() {
             try {
-                datagramSocket = new DatagramSocket(PORT);
+                datagramSocket = new DatagramSocket(/*PORT*/);
                 datagramSocket.setBroadcast(true);
                 buffer = "Msg from server".getBytes("UTF-8");
-                Discoverer.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(Discoverer.this, "Server : Socket created", Toast.LENGTH_SHORT).show();
-                    }
-                });
 
                 while(!exit) {
                     datagramPacket = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(SERVER_IP), PORT);
@@ -160,19 +158,21 @@ public class Discoverer extends ActionBarActivity  {
                 e.printStackTrace();
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            } finally {
+                datagramSocket.close();
             }
-            datagramSocket.close();
 
             Discoverer.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(Discoverer.this, "Server stopped", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(Discoverer.this, "Broadcasting stopped", Toast.LENGTH_SHORT).show();
                 }
             });
         }
 
         public void stop() {
             exit = true;
+            clientRunning = false;
         }
     }
 
@@ -184,13 +184,10 @@ public class Discoverer extends ActionBarActivity  {
         byte buffer[];
         DatagramSocket datagramSocket;
         volatile boolean exit;
-        HashMap<String, Integer> peerList;
-        Context context;
 
-        public ClientThread(Context context){
+
+        public ClientThread(){
             exit = false;
-            peerList = new HashMap<String, Integer>();
-            this.context = context;
         }
 
         @Override
@@ -225,12 +222,6 @@ public class Discoverer extends ActionBarActivity  {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    Discoverer.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(Discoverer.this, "Msg from " + datagramPacket.getAddress().getHostAddress(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
                     updatePeers(datagramPacket.getAddress().getHostAddress());
                 } // end of while
 
@@ -259,7 +250,7 @@ public class Discoverer extends ActionBarActivity  {
             Discoverer.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(Discoverer.this, "Client stopped", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(Discoverer.this, "Listening stopped", Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -278,32 +269,46 @@ public class Discoverer extends ActionBarActivity  {
             Set its counter to 0
              */
             peerList.put(s, 0);
-            updatePeerListView();
+        }
+    }
+
+    /**
+     * Thread to update the ListView of available peers
+     */
+    public class UpdatePeerListViewThread implements Runnable {
+
+        Context context;
+        public UpdatePeerListViewThread(Context context) {
+            this.context = context;
         }
 
-        /**
-         * Update the ListView of available peers
-         */
-        public void updatePeerListView() {
-            Discoverer.this.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    List<String> peer = new ArrayList<String>();
-                    List<Integer> counter = new ArrayList<Integer>();
-                    for (String s : peerList.keySet()) {
-                        peerList.put(s, peerList.get(s) + 1);
-                        peer.add(s);
-                        counter.add(peerList.get(s));
+        @Override
+        public void run() {
+            while (true) {
+                Discoverer.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        List<String> peer = new ArrayList<String>();
+                        List<Integer> counter = new ArrayList<Integer>();
+                        for (String s : peerList.keySet()) {
+                            if(peerList.get(s) >= 10) {
+                                peerList.remove(s);
+                            } else {
+                                peerList.put(s, peerList.get(s) + 1);
+                                peer.add(s);
+                                counter.add(peerList.get(s));
+                            }
+                        }
+                        PeerListView peerListRow = new PeerListView(context, peer, counter);
+                        peerListView.setAdapter(peerListRow);
                     }
-                    PeerListView peerListRow = new PeerListView(context, peer, counter);
-                    peerListView.setAdapter(peerListRow);
-                }
-            });
+                });
 
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
