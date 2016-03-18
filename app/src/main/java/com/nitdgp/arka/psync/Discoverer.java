@@ -26,6 +26,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 /**
  * The Discoverer module
@@ -43,6 +44,9 @@ public class Discoverer extends ActionBarActivity  {
     private static int PORT = 4446;
     private static boolean serverRunning = false;
     private static boolean clientRunning = false;
+
+    Semaphore mutex = new Semaphore(1);
+    Semaphore semaphore = new Semaphore(0);
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
