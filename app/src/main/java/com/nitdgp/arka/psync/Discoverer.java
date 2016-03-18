@@ -73,37 +73,20 @@ public class Discoverer extends ActionBarActivity  {
         }
 
         final UpdatePeerListViewThread updateView = new UpdatePeerListViewThread(this);
-        final ServerThread server = new ServerThread() ;
-        final ClientThread client = new ClientThread();
+        final BroadcastThread broadcastThread = new BroadcastThread() ;
+        final ListenThread listenThread = new ListenThread();
         final Thread[] thread = new Thread[3];
 
-        thread[1] = new Thread(client);
+        thread[1] = new Thread(listenThread);
 
-        /*
-        Broadcast message only if device is not listening for message
-        Listen for message only if device itself not broadcasting
+        /**
+         * Start broadcasting if device is not already broadcasting
          */
-        listen.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(!clientRunning /*&& !serverRunning*/) {
-                    if(thread[1].isAlive()){
-                        client.revive();
-                    }else {
-                        thread[1] = new Thread(client);
-                        thread[1].start();
-                    }
-                    thread[2] = new Thread(updateView);
-                    thread[2].start();
-                    clientRunning = true;
-                }
-            }
-        });
         broadcast.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!serverRunning /*&& !clientRunning*/) {
-                    thread[0] = new Thread(server);
+                if (!serverRunning ) {
+                    thread[0] = new Thread(broadcastThread);
                     thread[0].start();
                     serverRunning = true;
                 }
@@ -113,8 +96,33 @@ public class Discoverer extends ActionBarActivity  {
             @Override
             public void onClick(View v) {
                 if(serverRunning) {
-                    server.stop();
+                    broadcastThread.stop();
                     serverRunning = false;
+                }
+            }
+        });
+        /**
+         * Start listening for broadcasts if not already listening
+         */
+        listen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                /*
+                Check for any zombie thread waiting for broadcast
+                If there is no zombie thread start a new thread to
+                listen for broadcast
+                else revive zombie thread
+                 */
+                if(!clientRunning ) {
+                    if(thread[1].isAlive()){
+                        listenThread.revive();
+                    }else {
+                        thread[1] = new Thread(listenThread);
+                        thread[1].start();
+                    }
+                    thread[2] = new Thread(updateView);
+                    thread[2].start();
+                    clientRunning = true;
                 }
             }
         });
@@ -122,12 +130,14 @@ public class Discoverer extends ActionBarActivity  {
             @Override
             public void onClick(View v) {
                 if (clientRunning) {
-                    client.stop();
+                    listenThread.stop();
                     updateView.stop();
-                    //clientRunning = false;
                 }
             }
         });
+        /*
+        Start HTTP server
+         */
         webServer = new WebServer(8080);
         try {
             webServer.start();
@@ -138,15 +148,15 @@ public class Discoverer extends ActionBarActivity  {
     }
 
     /**
-     * A server that will write data on the buffer continuously
+     * Thread to broadcast Datagram packets
      */
-    public class ServerThread implements Runnable {
+    public class BroadcastThread implements Runnable {
         DatagramSocket datagramSocket;
         byte buffer[] = null;
         DatagramPacket datagramPacket;
         volatile boolean exit;
 
-        public ServerThread() {
+        public BroadcastThread() {
             exit = false;
         }
 
@@ -195,16 +205,16 @@ public class Discoverer extends ActionBarActivity  {
     }
 
     /**
-     * A client to listen for broadcasts
+     * Thread to listen for broadcasts
      */
-    public class ClientThread implements Runnable{
+    public class ListenThread implements Runnable{
         DatagramPacket datagramPacket;
         byte buffer[];
         DatagramSocket datagramSocket;
         volatile boolean exit;
 
 
-        public ClientThread(){
+        public ListenThread(){
             exit = false;
         }
 
