@@ -42,11 +42,9 @@ public class Discoverer extends ActionBarActivity  {
 
     private static final String SERVER_IP = "192.168.43.255";
     private static int PORT = 4446;
-    private static boolean serverRunning = false;
-    private static boolean clientRunning = false;
-
-    Semaphore mutex = new Semaphore(1);
-    Semaphore semaphore = new Semaphore(0);
+    private boolean serverRunning = false;
+    private boolean clientRunning = false;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,9 +54,9 @@ public class Discoverer extends ActionBarActivity  {
         Initialise
          */
         broadcast = (Button)findViewById(R.id.btn_broadcast);
-        listen = (Button)findViewById(R.id.btn_start_client);
-        stopBroadcast = (Button)findViewById(R.id.btn_stop_server);
-        stopListen = (Button)findViewById(R.id.btn_stop_client);
+        listen = (Button)findViewById(R.id.btn_listen);
+        stopBroadcast = (Button)findViewById(R.id.btn_stop_broadcast);
+        stopListen = (Button)findViewById(R.id.btn_stop_listener);
         peerListView = (ListView)findViewById(android.R.id.list);
         peerList = new HashMap<String, Integer>();
         /*
@@ -72,12 +70,12 @@ public class Discoverer extends ActionBarActivity  {
             displayToast("Not connected");
         }
 
-        UpdatePeerListViewThread updateView = new UpdatePeerListViewThread(this);
-        new Thread(updateView).start();
-
+        final UpdatePeerListViewThread updateView = new UpdatePeerListViewThread(this);
         final ServerThread server = new ServerThread() ;
         final ClientThread client = new ClientThread();
-        final Thread[] thread = new Thread[2];
+        final Thread[] thread = new Thread[3];
+
+        thread[1] = new Thread(client);
 
         /*
         Broadcast message only if device is not listening for message
@@ -87,8 +85,14 @@ public class Discoverer extends ActionBarActivity  {
             @Override
             public void onClick(View v) {
                 if(!clientRunning /*&& !serverRunning*/) {
-                    thread[1] = new Thread(client);
-                    thread[1].start();
+                    if(thread[1].isAlive()){
+                        client.revive();
+                    }else {
+                        thread[1] = new Thread(client);
+                        thread[1].start();
+                    }
+                    thread[2] = new Thread(updateView);
+                    thread[2].start();
                     clientRunning = true;
                 }
             }
@@ -117,6 +121,7 @@ public class Discoverer extends ActionBarActivity  {
             public void onClick(View v) {
                 if (clientRunning) {
                     client.stop();
+                    updateView.stop();
                     //clientRunning = false;
                 }
             }
@@ -139,7 +144,7 @@ public class Discoverer extends ActionBarActivity  {
         @Override
         public void run() {
             try {
-                datagramSocket = new DatagramSocket(/*PORT*/);
+                datagramSocket = new DatagramSocket();
                 datagramSocket.setBroadcast(true);
                 buffer = "Msg from server".getBytes("UTF-8");
 
@@ -154,6 +159,7 @@ public class Discoverer extends ActionBarActivity  {
                     });
                     Thread.sleep(3000);
                 }
+                exit = false;
             } catch (SocketException e) {
                 e.printStackTrace();
             } catch(UnknownHostException e){
@@ -176,7 +182,6 @@ public class Discoverer extends ActionBarActivity  {
 
         public void stop() {
             exit = true;
-            clientRunning = false;
         }
     }
 
@@ -228,7 +233,7 @@ public class Discoverer extends ActionBarActivity  {
                     }
                     updatePeers(datagramPacket.getAddress().getHostAddress());
                 } // end of while
-
+                exit = false;
             }catch (UnknownHostException e){
 
                 Discoverer.this.runOnUiThread(new Runnable() {
@@ -261,6 +266,14 @@ public class Discoverer extends ActionBarActivity  {
 
         public void stop() {
             exit = true;
+            clientRunning = false;
+        }
+
+        /**
+         * Handle zombie state of listening thread
+         */
+        public void revive() {
+            exit = false;
         }
 
         /**
@@ -280,6 +293,7 @@ public class Discoverer extends ActionBarActivity  {
      * Thread to update the ListView of available peers
      */
     public class UpdatePeerListViewThread implements Runnable {
+        boolean exit = false;
 
         Context context;
         public UpdatePeerListViewThread(Context context) {
@@ -288,7 +302,7 @@ public class Discoverer extends ActionBarActivity  {
 
         @Override
         public void run() {
-            while (true) {
+            while (!exit) {
                 Discoverer.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -307,13 +321,17 @@ public class Discoverer extends ActionBarActivity  {
                         peerListView.setAdapter(peerListRow);
                     }
                 });
-
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
+            exit = false;
+        }
+
+        public void stop() {
+            exit = true;
         }
     }
 
