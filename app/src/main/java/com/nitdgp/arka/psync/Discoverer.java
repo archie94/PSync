@@ -26,6 +26,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -38,13 +39,13 @@ public class Discoverer extends ActionBarActivity  {
     Button listen;
     Button stopListen;
     ListView peerListView;
-    volatile HashMap<String, Integer> peerList;
+    volatile ConcurrentHashMap<String, Integer> peerList;
 
     private static final String SERVER_IP = "192.168.43.255";
     private static int PORT = 4446;
     private boolean serverRunning = false;
     private boolean clientRunning = false;
-    
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,7 +59,7 @@ public class Discoverer extends ActionBarActivity  {
         stopBroadcast = (Button)findViewById(R.id.btn_stop_broadcast);
         stopListen = (Button)findViewById(R.id.btn_stop_listener);
         peerListView = (ListView)findViewById(android.R.id.list);
-        peerList = new HashMap<String, Integer>();
+        peerList = new ConcurrentHashMap<String, Integer>();
         /*
          * Check if device is connected via wifi
          */
