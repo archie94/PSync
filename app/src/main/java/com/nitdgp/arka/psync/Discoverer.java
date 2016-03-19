@@ -21,6 +21,7 @@ import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -89,6 +90,11 @@ public class Discoverer extends ActionBarActivity  {
                     thread[0] = new Thread(broadcastThread);
                     thread[0].start();
                     serverRunning = true;
+                    try {
+                        new FileTransporter().downloadFile();
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         });
