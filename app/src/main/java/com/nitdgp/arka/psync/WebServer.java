@@ -3,11 +3,9 @@ package com.nitdgp.arka.psync;
 import android.os.Environment;
 import android.util.Log;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -27,27 +25,8 @@ public class WebServer extends NanoHTTPD {
                           Map<String, String> header,
                           Map<String, String> parameters,
                           Map<String, String> files) {
-        /*String answer = "";
-        try {
-            // Open file from SD Card
-            File root = Environment.getExternalStorageDirectory();
-            FileReader index = new FileReader(root.getAbsolutePath() +
-                    "/www/index.html");
-            BufferedReader reader = new BufferedReader(index);
-            String line = "";
-            while ((line = reader.readLine()) != null) {
-                answer += line;
-            }
-            reader.close();
-
-        } catch(IOException ioe) {
-            Log.w("Httpd", ioe.toString());
-        }
-
-
-        return newFixedLengthResponse( answer + "</body></html>\n" );*/
         File f = new File(Environment.getExternalStorageDirectory()
-                + "/www/index.html");
+                + "/www/movie.mkv");
         String mimeType =  "application/octet-stream";
 
 
@@ -69,10 +48,12 @@ public class WebServer extends NanoHTTPD {
     private Response serveFile(String uri, Map<String, String> header,
                                File file, String mime) {
         Response res;
+        Log.d("DEBUG", "Starting response");
         try {
             // Calculate etag
             String etag = Integer.toHexString((file.getAbsolutePath()
                     + file.lastModified() + "" + file.length()).hashCode());
+            Log.d("DEBUG", "Etag calculated");
 
             // Support (simple) skipping:
             long startFrom = 0;
@@ -80,6 +61,7 @@ public class WebServer extends NanoHTTPD {
             String range = header.get("range");
             if (range != null) {
                 if (range.startsWith("bytes=")) {
+                    Log.d("DEBUG", "Range not null");
                     range = range.substring("bytes=".length());
                     int minus = range.indexOf('-');
                     try {
@@ -102,6 +84,7 @@ public class WebServer extends NanoHTTPD {
                             NanoHTTPD.MIME_PLAINTEXT, new ByteArrayInputStream("".getBytes(StandardCharsets.UTF_8)), "".length());
                     res.addHeader("Content-Range", "bytes 0-0/" + fileLen);
                     res.addHeader("ETag", etag);
+                    Log.d("DEBUG", "Range not satisfiable");
                 } else {
                     if (endAt < 0) {
                         endAt = fileLen - 1;
@@ -126,15 +109,18 @@ public class WebServer extends NanoHTTPD {
                     res.addHeader("Content-Range", "bytes " + startFrom + "-"
                             + endAt + "/" + fileLen);
                     res.addHeader("ETag", etag);
+                    Log.d("DEBUG", "partial content");
                 }
             } else {
                 if (etag.equals(header.get("if-none-match")))
                     res = createResponse(Response.Status.NOT_MODIFIED, mime, new ByteArrayInputStream("".getBytes(StandardCharsets.UTF_8)), "".length());
                 else {
                     res = createResponse(Response.Status.OK, mime,
-                            new FileInputStream(file), file.length());
+                            new FileInputStream(file), fileLen);
                     res.addHeader("Content-Length", "" + fileLen);
                     res.addHeader("ETag", etag);
+                    Log.d("DEBUG", "not modified");
+                    res.addHeader("Content-Disposition", "attachment; filename=" + "\"" + file.getName()+"\"");
                 }
             }
         } catch (IOException ioe) {
