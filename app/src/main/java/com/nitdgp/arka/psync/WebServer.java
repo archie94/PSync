@@ -1,5 +1,7 @@
 package com.nitdgp.arka.psync;
-
+/**
+ * Created by arka on 18/3/16.
+ */
 import android.os.Environment;
 import android.util.Log;
 
@@ -11,9 +13,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-/**
- * Created by arka on 18/3/16.
- */
+
 public class WebServer extends NanoHTTPD {
 
     public WebServer(int port) {
@@ -112,9 +112,9 @@ public class WebServer extends NanoHTTPD {
                     Log.d("DEBUG", "partial content");
                 }
             } else {
-                if (etag.equals(header.get("if-none-match")))
+                if (etag.equals(header.get("if-none-match"))) {
                     res = createResponse(Response.Status.NOT_MODIFIED, mime, new ByteArrayInputStream("".getBytes(StandardCharsets.UTF_8)), "".length());
-                else {
+                } else {
                     res = createResponse(Response.Status.OK, mime,
                             new FileInputStream(file), fileLen);
                     res.addHeader("Content-Length", "" + fileLen);

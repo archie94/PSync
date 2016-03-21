@@ -1,5 +1,7 @@
 package com.nitdgp.arka.psync;
-
+/**
+ * Created by arka on 19/3/16.
+ */
 import android.os.Environment;
 import android.util.Log;
 
@@ -12,7 +14,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
- * Created by arka on 19/3/16.
+ * The File Transporter module : request a file from a peer node
  */
 public class FileTransporter {
 
@@ -48,45 +50,45 @@ public class FileTransporter {
 
             try {
                 // open Http connection to URL
-                HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+                HttpURLConnection connection = (HttpURLConnection)url.openConnection();
                 Log.d("DEBUG:FILE TRANSPORTER", "URl is" + url);
 
 
                 // set the range of byte to download
                 String byteRange = startByte + "-" /*+ endByte*/;
                 //conn.setRequestProperty("Range", "bytes=" + byteRange);
-                conn.setRequestMethod("GET");
-                conn.setConnectTimeout( 5*1000);
-                conn.setReadTimeout(5*1000);
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout( 5*1000);
+                connection.setReadTimeout(5*1000);
 
                 Log.d("DEBUG:FILE TRANSPORTER", "Connection created" + byteRange);
 
                 // connect to server
-                conn.connect();
-                Log.d("DEBUG:FILE TRANSPORTER", "Callled connect with timeout " + conn.getConnectTimeout());
-                Log.d("DEBUG:FILE TRANSPORTER", ""+conn.getResponseCode());
+                connection.connect();
+                Log.d("DEBUG:FILE TRANSPORTER", "Callled connect with timeout " + connection.getConnectTimeout());
+                Log.d("DEBUG:FILE TRANSPORTER", ""+connection.getResponseCode());
 
                 // Make sure the response code is in the 200 range.
-                if (conn.getResponseCode() / 100 != 2) {
+                if (connection.getResponseCode() / 100 != 2) {
                     Log.d("DEBUG:FILE TRANSPORTER", "error : Response code out of 200 range");
                 }
 
-                Log.d("DEBUG:FILE TRANSPORTER", "Response code : " + conn.getResponseCode());
+                Log.d("DEBUG:FILE TRANSPORTER", "Response code : " + connection.getResponseCode());
                 // get the input stream
-                in = new BufferedInputStream(conn.getInputStream());
+                in = new BufferedInputStream(connection.getInputStream());
 
                 // open the output file and seek to the start location
                 raf = new RandomAccessFile(outputFile, "rw");
                 raf.seek(startByte);
 
                 byte data[] = new byte[BUFFER_SIZE];
-                int numRead;
-                while(/*(mState == DOWNLOADING) &&*/ ((numRead = in.read(data,0,BUFFER_SIZE)) != -1))
+                int numBytesRead;
+                while(/*(mState == DOWNLOADING) &&*/ ((numBytesRead = in.read(data,0,BUFFER_SIZE)) != -1))
                 {
                     // write to buffer
-                    raf.write(data,0,numRead);
+                    raf.write(data,0,numBytesRead);
                     // increase the startByte for resume later
-                    startByte += numRead;
+                    startByte += numBytesRead;
                     // increase the downloaded size
                     Log.d("DEBUG:FILE TRANSPORTER", "Fetching  data " + startByte);
                 }

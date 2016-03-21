@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The Discoverer module
+ * The Discoverer module : Find Peers in communication ranges
  */
 public class Discoverer extends ActionBarActivity  {
 
@@ -38,6 +38,7 @@ public class Discoverer extends ActionBarActivity  {
     Button stopBroadcast;
     Button listen;
     Button stopListen;
+    Button getFile;
     ListView peerListView;
     volatile ConcurrentHashMap<String, Integer> peerList;
 
@@ -60,6 +61,7 @@ public class Discoverer extends ActionBarActivity  {
         listen = (Button)findViewById(R.id.btn_listen);
         stopBroadcast = (Button)findViewById(R.id.btn_stop_broadcast);
         stopListen = (Button)findViewById(R.id.btn_stop_listener);
+        getFile = (Button)findViewById(R.id.btn_get_file);
         peerListView = (ListView)findViewById(android.R.id.list);
         peerList = new ConcurrentHashMap<String, Integer>();
         /*
@@ -90,11 +92,6 @@ public class Discoverer extends ActionBarActivity  {
                     thread[0] = new Thread(broadcastThread);
                     thread[0].start();
                     serverRunning = true;
-                    try {
-                        new FileTransporter().downloadFile();
-                    } catch (MalformedURLException e) {
-                        e.printStackTrace();
-                    }
                 }
             }
         });
@@ -138,6 +135,17 @@ public class Discoverer extends ActionBarActivity  {
                 if (clientRunning) {
                     listenThread.stop();
                     updateView.stop();
+                }
+            }
+        });
+
+        getFile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    new FileTransporter().downloadFile();
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
                 }
             }
         });

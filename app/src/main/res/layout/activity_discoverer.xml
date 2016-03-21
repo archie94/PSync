@@ -44,4 +44,12 @@
         android:layout_below="@+id/btn_broadcast"
         android:layout_alignParentStart="true" />
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Get File"
+        android:id="@+id/btn_get_file"
+        android:layout_alignBottom="@+id/btn_broadcast"
+        android:layout_centerHorizontal="true" />
+
 </RelativeLayout>
