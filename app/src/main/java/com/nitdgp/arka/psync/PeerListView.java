@@ -1,5 +1,7 @@
 package com.nitdgp.arka.psync;
-
+/**
+ * Created by arka on 16/3/16.
+ */
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,9 +11,7 @@ import android.widget.TextView;
 
 import java.util.List;
 
-/**
- * Created by arka on 16/3/16.
- */
+
 public class PeerListView extends BaseAdapter{
     private final Context context;
     private final List<String> peer;
