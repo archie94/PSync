@@ -6,6 +6,7 @@ package com.nitdgp.arka.psync;
 
 import android.os.Environment;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -28,7 +29,8 @@ public class FileManager {
 
     HashMap<String, FileTable> fileTableHashMap;
     final String DATABASE_NAME = "fileDB.txt";
-    final String DATABASE_PATH = Environment.getExternalStorageDirectory() + "/www/" + DATABASE_NAME;
+    final String DATABASE_PATH = Environment.getExternalStorageDirectory() + "/www/Database/" + DATABASE_NAME;
+    final File FILES_PATH = new File(Environment.getExternalStorageDirectory() + "/www/");
 
     /**
      * Class to save file description
@@ -163,4 +165,31 @@ public class FileManager {
             }
         }
     }
+
+    /**
+     * Traverse the folder and add / remove files
+     */
+    private void updateFromFolder(){
+        ArrayList<File> files = findFiles(FILES_PATH);      // get all files
+        // add , remove or update database
+    }
+
+    /**
+     * Returns the list of files available in working directory
+     * @param files_path    : the working directory
+     * @return              : the list of files in working directory
+     */
+    private ArrayList<File> findFiles(File files_path) {
+        ArrayList<File> files = new ArrayList<File>();
+        File[] allFile = files_path.listFiles();
+        for(File file : allFile) {
+            // ignore if it is a directory
+            if(!file.isDirectory()) {
+                files.add(file);
+            }
+        }
+        return files;
+    }
+
+
 }
