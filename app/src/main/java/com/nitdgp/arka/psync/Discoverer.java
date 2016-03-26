@@ -4,15 +4,8 @@ package com.nitdgp.arka.psync;
  * @version : 4 March 2016
  */
 import android.content.Context;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
-import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import java.io.ByteArrayInputStream;
@@ -21,157 +14,100 @@ import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+
 
 /**
  * The Discoverer module : Find Peers in communication ranges
  */
-public class Discoverer extends ActionBarActivity  {
+public class Discoverer {
 
-    Button broadcast;
-    Button stopBroadcast;
-    Button listen;
-    Button stopListen;
-    Button getFile;
-    ListView peerListView;
-    volatile ConcurrentHashMap<String, Integer> peerList;
+    String BROADCAST_IP;
+    int PORT;
+    final Thread[] thread = new Thread[3];
+    final BroadcastThread broadcastThread;
+    final ListenThread listenThread;
+    Context mContext;
 
-    private static final String SERVER_IP = "192.168.43.255";
-    private static int PORT = 4446;
-    private boolean serverRunning = false;
-    private boolean clientRunning = false;
+    public Discoverer(String BROADCAST_IP, int PORT, Context mContext) {
+        this.BROADCAST_IP = BROADCAST_IP;
+        this.PORT = PORT;
+        this.mContext = mContext;
 
-
-    private WebServer webServer;
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_discoverer);
-
-        /*
-        Initialise
-         */
-        broadcast = (Button)findViewById(R.id.btn_broadcast);
-        listen = (Button)findViewById(R.id.btn_listen);
-        stopBroadcast = (Button)findViewById(R.id.btn_stop_broadcast);
-        stopListen = (Button)findViewById(R.id.btn_stop_listener);
-        getFile = (Button)findViewById(R.id.btn_get_file);
-        peerListView = (ListView)findViewById(android.R.id.list);
-        peerList = new ConcurrentHashMap<String, Integer>();
-        /*
-         * Check if device is connected via wifi
-         */
-        ConnectivityManager connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        if(networkInfo.isConnected()){
-            displayToast("Connected via wifi");
-        }else{
-            displayToast("Not connected");
-        }
-
-        final UpdatePeerListViewThread updateView = new UpdatePeerListViewThread(this);
-        final BroadcastThread broadcastThread = new BroadcastThread() ;
-        final ListenThread listenThread = new ListenThread();
-        final Thread[] thread = new Thread[3];
-
+        broadcastThread = new BroadcastThread(BROADCAST_IP, PORT);
+        listenThread = new ListenThread();
+        thread[0] = new Thread(broadcastThread);
         thread[1] = new Thread(listenThread);
-
-        /**
-         * Start broadcasting if device is not already broadcasting
-         */
-        broadcast.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!serverRunning ) {
-                    thread[0] = new Thread(broadcastThread);
-                    thread[0].start();
-                    serverRunning = true;
-                }
-            }
-        });
-        stopBroadcast.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(serverRunning) {
-                    broadcastThread.stop();
-                    serverRunning = false;
-                }
-            }
-        });
-        /**
-         * Start listening for broadcasts if not already listening
-         */
-        listen.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                /*
-                Check for any zombie thread waiting for broadcast
-                If there is no zombie thread start a new thread to
-                listen for broadcast
-                else revive zombie thread
-                 */
-                if(!clientRunning ) {
-                    if(thread[1].isAlive()){
-                        listenThread.revive();
-                    }else {
-                        thread[1] = new Thread(listenThread);
-                        thread[1].start();
-                    }
-                    thread[2] = new Thread(updateView);
-                    thread[2].start();
-                    clientRunning = true;
-                }
-            }
-        });
-        stopListen.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (clientRunning) {
-                    listenThread.stop();
-                    updateView.stop();
-                }
-            }
-        });
-
-        getFile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    new FileTransporter().downloadFile();
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        /*
-        Start HTTP server
-         */
-        webServer = new WebServer(8080);
-        try {
-            webServer.start();
-        } catch(IOException ioe) {
-            Log.w("Httpd", "The server could not start.");
-        }
-        Log.w("Httpd", "Web server initialized.");
     }
+
+    public void startBroadcast(){
+        if (!broadcastThread.isRunning) {
+            thread[0] = new Thread(broadcastThread);
+            thread[0].start();
+        }
+    }
+
+    public void stopBroadcast() {
+        if(broadcastThread.isRunning) {
+            broadcastThread.stop();
+        }
+    }
+
+    public void startListener() {
+        /*
+        Check for any zombie thread waiting for broadcast
+        If there is no zombie thread start a new thread to
+        listen for broadcast
+        else revive zombie thread
+        */
+
+        if (!listenThread.isRunning) {
+            if (thread[1].isAlive()) {
+                listenThread.revive();
+            } else {
+                thread[1] = new Thread(listenThread);
+                thread[1].start();
+            }
+        }
+    }
+
+    public void stopListener() {
+        if (!listenThread.exit) {
+            listenThread.stop();
+        }
+    }
+
+    public void startDiscoverer(){
+        startBroadcast();
+        startListener();
+    }
+
+    public void stopDiscoverer(){
+        stopBroadcast();
+        stopListener();
+    }
+
 
     /**
      * Thread to broadcast Datagram packets
      */
     public class BroadcastThread implements Runnable {
+        String BROADCAST_IP = "192.168.43.255";
+        int PORT = 4446;
         DatagramSocket datagramSocket;
         byte buffer[] = null;
         DatagramPacket datagramPacket;
         volatile boolean exit;
+        volatile boolean isRunning;
 
-        public BroadcastThread() {
-            exit = false;
+        public BroadcastThread(String BROADCAST_IP, int PORT) {
+            this.BROADCAST_IP = BROADCAST_IP;
+            this.PORT = PORT;
+            this.exit = false;
+            this.isRunning = false;
         }
 
         @Override
@@ -180,19 +116,19 @@ public class Discoverer extends ActionBarActivity  {
                 datagramSocket = new DatagramSocket();
                 datagramSocket.setBroadcast(true);
                 buffer = "Msg from server".getBytes("UTF-8");
-
-                while(!exit) {
-                    datagramPacket = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(SERVER_IP), PORT);
+                this.isRunning = true;
+                while(!this.exit) {
+                    datagramPacket = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(BROADCAST_IP), PORT);
                     datagramSocket.send(datagramPacket);
-                    Discoverer.this.runOnUiThread(new Runnable() {
+                    /*Discoverer.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             Toast.makeText(Discoverer.this, "Server : packet send", Toast.LENGTH_SHORT).show();
                         }
-                    });
+                    });*/
+                    Log.d("DEBUG", "Broadcast Packet Sent");
                     Thread.sleep(3000);
                 }
-                exit = false;
             } catch (SocketException e) {
                 e.printStackTrace();
             } catch(UnknownHostException e){
@@ -204,19 +140,25 @@ public class Discoverer extends ActionBarActivity  {
             } finally {
                 datagramSocket.close();
             }
-
+            this.exit = false;
+            this.isRunning = false;
+            /*
             Discoverer.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     Toast.makeText(Discoverer.this, "Broadcasting stopped", Toast.LENGTH_SHORT).show();
                 }
             });
+            */
+            Log.d("DEBUG", "Broadcasting Stopped");
         }
 
         public void stop() {
-            exit = true;
+
+            this.exit = true;
         }
     }
+
 
     /**
      * Thread to listen for broadcasts
@@ -226,30 +168,37 @@ public class Discoverer extends ActionBarActivity  {
         byte buffer[];
         DatagramSocket datagramSocket;
         volatile boolean exit;
+        volatile boolean isRunning;
+        public volatile ConcurrentHashMap<String, Integer> peerList;
 
 
         public ListenThread(){
-            exit = false;
+
+            this.exit = false;
+            this.isRunning = false;
+            this.peerList = new ConcurrentHashMap<String, Integer>();
         }
 
         @Override
         public void run() {
             WifiManager wifiManager;
-            wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+            wifiManager = (WifiManager)mContext.getSystemService(Context.WIFI_SERVICE);
             WifiManager.MulticastLock multicastLock = wifiManager.createMulticastLock("lock");
             multicastLock.acquire();
             try{
                 datagramSocket = new DatagramSocket(PORT, InetAddress.getByName("0.0.0.0"));
                 datagramSocket.setBroadcast(true);
 
-                Discoverer.this.runOnUiThread(new Runnable() {
+                /*Discoverer.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         Toast.makeText(Discoverer.this, "Client : socket created", Toast.LENGTH_SHORT).show();
                     }
                 });
-
-                while(!exit) {
+                */
+                Log.d("DEBUG", "ListenerThread Start");
+                this.isRunning = true;
+                while(!this.exit) {
                     buffer = new byte[15000];
                     datagramPacket = new DatagramPacket(buffer, buffer.length);
                     datagramSocket.receive(datagramPacket);
@@ -266,47 +215,50 @@ public class Discoverer extends ActionBarActivity  {
                     }
                     updatePeers(datagramPacket.getAddress().getHostAddress());
                 } // end of while
-                exit = false;
             }catch (UnknownHostException e){
 
-                Discoverer.this.runOnUiThread(new Runnable() {
+                /*Discoverer.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         Toast.makeText(Discoverer.this, "Client exception 1", Toast.LENGTH_SHORT).show();
                     }
                 });
+                */
             }catch (IOException e){
 
-                Discoverer.this.runOnUiThread(new Runnable() {
+                /*Discoverer.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         Toast.makeText(Discoverer.this, "Client exception 2", Toast.LENGTH_SHORT).show();
                     }
                 });
+                */
             } finally {
                 datagramSocket.close();
             }
-
+            this.exit = false;
+            this.isRunning = false;
             multicastLock.release();
-
-            Discoverer.this.runOnUiThread(new Runnable() {
+            Log.d("DEBUG", "ListenerThread Stop");
+            /*Discoverer.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     Toast.makeText(Discoverer.this, "Listening stopped", Toast.LENGTH_SHORT).show();
                 }
             });
+            */
         }
 
         public void stop() {
-            exit = true;
-            clientRunning = false;
+            this.exit = true;
         }
 
         /**
          * Handle zombie state of listening thread
          */
         public void revive() {
-            exit = false;
+
+            this.exit = false;
         }
 
         /**
@@ -314,10 +266,12 @@ public class Discoverer extends ActionBarActivity  {
          * @param s the ip address of the current peer
          */
         public void updatePeers(String s) {
+
             /*
             Put the ip address in the table
             Set its counter to 0
              */
+            Log.d("DEBUG", "ListenerThread Receive:" + s);
             peerList.put(s, 0);
         }
     }
@@ -325,7 +279,7 @@ public class Discoverer extends ActionBarActivity  {
     /**
      * Thread to update the ListView of available peers
      */
-    public class UpdatePeerListViewThread implements Runnable {
+/*    public class UpdatePeerListViewThread implements Runnable {
         boolean exit = false;
 
         Context context;
@@ -371,4 +325,5 @@ public class Discoverer extends ActionBarActivity  {
     public void displayToast(String msg){
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
+*/
 }
