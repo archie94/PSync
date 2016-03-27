@@ -30,13 +30,17 @@ public class Sync extends AppCompatActivity {
 
 
     private static final String BROADCAST_IP = "192.168.43.255";
-    private static int PORT = 4446;
+    private static final int PORT = 4446;
+
+    private static String syncDirectory = "/www/sync/";
+    private static String databaseDirectory = "/www/database/";
+    private static String databaseName = "fileDB.txt";
 
 
 
     private WebServer webServer;
     Discoverer discoverer = new Discoverer(BROADCAST_IP, PORT, this);
-    FileManager fileManager = new FileManager();
+    FileManager fileManager = new FileManager(databaseName, databaseDirectory, syncDirectory);
     /* Methods */
     public void displayToast(String msg){
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
@@ -83,7 +87,6 @@ public class Sync extends AppCompatActivity {
 //        final Discoverer.BroadcastThread broadcastThread = discoverer.new BroadcastThread(BROADCAST_IP, PORT);
 //        final ListenThread listenThread = new ListenThread();
 //        final Thread[] thread = new Thread[3];
-        fileManager.readDB();
 
 //        thread[1] = new Thread(listenThread);
 
