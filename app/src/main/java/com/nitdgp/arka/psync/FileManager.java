@@ -17,6 +17,7 @@ import java.io.StreamCorruptedException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * File Table and File List Format:
@@ -26,11 +27,10 @@ import java.util.List;
  */
 public class FileManager {
 
-
-    HashMap<String, FileTable> fileTableHashMap;
+    ConcurrentHashMap<String, FileTable> fileTableHashMap;
     final String DATABASE_NAME = "fileDB.txt";
     final String DATABASE_PATH = Environment.getExternalStorageDirectory() + "/www/Database/" + DATABASE_NAME;
-    final File FILES_PATH = new File(Environment.getExternalStorageDirectory() + "/www/");
+    final File FILES_PATH = new File(Environment.getExternalStorageDirectory() + "/www/sync/");
 
     /**
      * Class to save file description
@@ -40,13 +40,13 @@ public class FileManager {
         private String fileName;
         private List sequence;
         private double fileSize;
-        private String priority;
+        private int priority;
         private String timestamp;
         private String ttl;
         private String destination;
         private boolean destinationReachedStatus;
 
-        public FileTable(String fileID, String fileName, List sequence, double fileSize, String priority,
+        public FileTable(String fileID, String fileName, List sequence, double fileSize, int priority,
                          String timestamp, String ttl, String destination, boolean destinationReachedStatus){
             this.fileID = fileID;
             this.fileName = fileName;
@@ -71,7 +71,7 @@ public class FileManager {
             return this.fileSize;
         }
 
-        String getPriority(){
+        int getPriority(){
             return this.priority;
         }
 
@@ -116,7 +116,7 @@ public class FileManager {
      * @param destination
      * @param destinationReachedStatus
      */
-    public void enterFile(String fileID, String fileName, List sequence, double fileSize, String priority,
+    public void enterFile(String fileID, String fileName, List sequence, double fileSize, int priority,
                           String timestamp, String ttl, String destination, boolean destinationReachedStatus){
         FileTable newFileInfo = new FileTable( fileID, fileName, sequence, fileSize, priority, timestamp,
                 ttl, destination, destinationReachedStatus);
@@ -151,7 +151,7 @@ public class FileManager {
      */
     private void readDB() {
         List <FileTable> fileList = null;
-        fileTableHashMap = new HashMap<String, FileTable>();
+        fileTableHashMap = new ConcurrentHashMap<String, FileTable>();
         try{
             FileInputStream fileInputStream = new FileInputStream(DATABASE_PATH);
             ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
