@@ -40,7 +40,7 @@ public class FileManager {
     /**
      * Class to save file description
      */
-    private static class FileTable implements java.io.Serializable{
+    private class FileTable implements java.io.Serializable{
         private String fileID;
         private String fileName;
         private List sequence;
