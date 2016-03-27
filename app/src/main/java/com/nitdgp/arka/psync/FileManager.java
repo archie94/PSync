@@ -198,6 +198,17 @@ public class FileManager {
 
         }
 
+        for (String key : fileTableHashMap.keySet()) {
+            FileTable fileInfo = fileTableHashMap.get(key);
+            String fileName = fileInfo.getFileName();
+            boolean check = new File(FILES_PATH + "/" + fileName).exists();
+            if(!check){
+                fileTableHashMap.remove(key);
+                Log.d("DEBUG", "FileManaager Remove from DB " + fileName);
+
+            }
+        }
+
         // add , remove or update database
     }
 
