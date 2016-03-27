@@ -33,81 +33,17 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FileManager {
 
     ConcurrentHashMap<String, FileTable> fileTableHashMap = new ConcurrentHashMap<String, FileTable>();
-    final String DATABASE_NAME = "fileDB.txt";
-    final String DATABASE_PATH = Environment.getExternalStorageDirectory() + "/www/database/" + DATABASE_NAME;
-    final File FILES_PATH = new File(Environment.getExternalStorageDirectory() + "/www/sync/");
+    final String DATABASE_NAME;
+    final String DATABASE_PATH;
+    final File FILES_PATH;
 
-    /**
-     * Class to save file description
-     */
-    private class FileTable implements java.io.Serializable{
-        private String fileID;
-        private String fileName;
-        private List sequence;
-        private double fileSize;
-        private int priority;
-        private String timestamp;
-        private String ttl;
-        private String destination;
-        private boolean destinationReachedStatus;
-
-        public FileTable(String fileID, String fileName, List sequence, double fileSize, int priority,
-                         String timestamp, String ttl, String destination, boolean destinationReachedStatus){
-            this.fileID = fileID;
-            this.fileName = fileName;
-            this.sequence = sequence;
-            this.fileSize = fileSize;
-            this.priority = priority;
-            this.timestamp = timestamp;
-            this.ttl = ttl;
-            this.destination = destination;
-            this.destinationReachedStatus = destinationReachedStatus;
-        }
-
-        String getFileID(){
-            return this.fileID;
-        }
-
-        String getFileName(){
-            return this.fileName;
-        }
-
-        double getFileSize(){
-            return this.fileSize;
-        }
-
-        int getPriority(){
-            return this.priority;
-        }
-
-        String getTimestamp(){
-            return this.timestamp;
-        }
-
-        String getTtl(){
-            return this.ttl;
-        }
-
-        String getDestination(){
-            return this.destination;
-        }
-
-        boolean getDestinationReachedStatus(){
-            return this.destinationReachedStatus;
-        }
-
-        void setTtl(String ttl) {
-            this.ttl = ttl;
-        }
-
-        void setSequence(List sequence){
-            this.sequence = sequence;
-        }
-
-        void setDestinationReachedStatus(boolean status){
-            this.destinationReachedStatus = status;
-        }
+    public FileManager(String databaseName, String databaseDirectory, String syncDirectory){
+        this.DATABASE_NAME = databaseName;
+        this.DATABASE_PATH = Environment.getExternalStorageDirectory() + databaseDirectory + DATABASE_NAME;
+        this.FILES_PATH = new File(Environment.getExternalStorageDirectory() + syncDirectory);
+        readDB();
     }
+
 
 
     /**
@@ -156,7 +92,7 @@ public class FileManager {
     /**
      * Deserialize data
      */
-    public void readDB() {
+    private void readDB() {
         Log.d("DEBUG", "FileManager reading from fileDB");
         List <FileTable> fileList = null;
         try{
@@ -247,4 +183,77 @@ public class FileManager {
     }
 
 
+}
+
+
+/**
+ * Class to save file description
+ */
+class FileTable implements java.io.Serializable{
+    private String fileID;
+    private String fileName;
+    private List sequence;
+    private double fileSize;
+    private int priority;
+    private String timestamp;
+    private String ttl;
+    private String destination;
+    private boolean destinationReachedStatus;
+
+    public FileTable(String fileID, String fileName, List sequence, double fileSize, int priority,
+                     String timestamp, String ttl, String destination, boolean destinationReachedStatus){
+        this.fileID = fileID;
+        this.fileName = fileName;
+        this.sequence = sequence;
+        this.fileSize = fileSize;
+        this.priority = priority;
+        this.timestamp = timestamp;
+        this.ttl = ttl;
+        this.destination = destination;
+        this.destinationReachedStatus = destinationReachedStatus;
+    }
+
+    String getFileID(){
+        return this.fileID;
+    }
+
+    String getFileName(){
+        return this.fileName;
+    }
+
+    double getFileSize(){
+        return this.fileSize;
+    }
+
+    int getPriority(){
+        return this.priority;
+    }
+
+    String getTimestamp(){
+        return this.timestamp;
+    }
+
+    String getTtl(){
+        return this.ttl;
+    }
+
+    String getDestination(){
+        return this.destination;
+    }
+
+    boolean getDestinationReachedStatus(){
+        return this.destinationReachedStatus;
+    }
+
+    void setTtl(String ttl) {
+        this.ttl = ttl;
+    }
+
+    void setSequence(List sequence){
+        this.sequence = sequence;
+    }
+
+    void setDestinationReachedStatus(boolean status){
+        this.destinationReachedStatus = status;
+    }
 }
