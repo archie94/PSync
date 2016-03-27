@@ -36,6 +36,7 @@ public class Sync extends AppCompatActivity {
 
     private WebServer webServer;
     Discoverer discoverer = new Discoverer(BROADCAST_IP, PORT, this);
+    FileManager fileManager = new FileManager();
     /* Methods */
     public void displayToast(String msg){
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
@@ -79,9 +80,10 @@ public class Sync extends AppCompatActivity {
         }
 
 //        final UpdatePeerListViewThread updateView = new UpdatePeerListViewThread(this);
-        final Discoverer.BroadcastThread broadcastThread = discoverer.new BroadcastThread(BROADCAST_IP, PORT);
+//        final Discoverer.BroadcastThread broadcastThread = discoverer.new BroadcastThread(BROADCAST_IP, PORT);
 //        final ListenThread listenThread = new ListenThread();
-        final Thread[] thread = new Thread[3];
+//        final Thread[] thread = new Thread[3];
+        fileManager.readDB();
 
 //        thread[1] = new Thread(listenThread);
 
@@ -138,11 +140,12 @@ public class Sync extends AppCompatActivity {
         getFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
+                fileManager.updateFromFolder();
+                /*try {
                     new FileTransporter().downloadFile();
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
-                }
+                }*/
             }
         });
         /*
