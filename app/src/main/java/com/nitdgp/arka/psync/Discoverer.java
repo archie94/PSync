@@ -31,12 +31,14 @@ public class Discoverer {
     final BroadcastThread broadcastThread;
     final ListenThread listenThread;
     Context mContext;
+    volatile ConcurrentHashMap<String, Integer> peerList;
 
     public Discoverer(String BROADCAST_IP, int PORT, Context mContext) {
         this.BROADCAST_IP = BROADCAST_IP;
         this.PORT = PORT;
         this.mContext = mContext;
 
+        peerList = new ConcurrentHashMap<String, Integer>();
         broadcastThread = new BroadcastThread(BROADCAST_IP, PORT);
         listenThread = new ListenThread();
         thread[0] = new Thread(broadcastThread);
@@ -95,8 +97,8 @@ public class Discoverer {
      * Thread to broadcast Datagram packets
      */
     public class BroadcastThread implements Runnable {
-        String BROADCAST_IP = "192.168.43.255";
-        int PORT = 4446;
+        String BROADCAST_IP;
+        int PORT;
         DatagramSocket datagramSocket;
         byte buffer[] = null;
         DatagramPacket datagramPacket;
@@ -154,7 +156,6 @@ public class Discoverer {
         }
 
         public void stop() {
-
             this.exit = true;
         }
     }
@@ -169,14 +170,11 @@ public class Discoverer {
         DatagramSocket datagramSocket;
         volatile boolean exit;
         volatile boolean isRunning;
-        public volatile ConcurrentHashMap<String, Integer> peerList;
 
 
         public ListenThread(){
-
             this.exit = false;
             this.isRunning = false;
-            this.peerList = new ConcurrentHashMap<String, Integer>();
         }
 
         @Override
@@ -257,7 +255,6 @@ public class Discoverer {
          * Handle zombie state of listening thread
          */
         public void revive() {
-
             this.exit = false;
         }
 
@@ -266,7 +263,6 @@ public class Discoverer {
          * @param s the ip address of the current peer
          */
         public void updatePeers(String s) {
-
             /*
             Put the ip address in the table
             Set its counter to 0

@@ -1,6 +1,7 @@
 package com.nitdgp.arka.psync;
-
-import android.app.Activity;
+/**
+ * Created by bishakh on 3/26/16.
+ */
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -18,9 +19,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Created by bishakh on 3/26/16.
- */
+
 public class Sync extends AppCompatActivity {
     Button broadcast;
     Button stopBroadcast;
@@ -28,7 +27,7 @@ public class Sync extends AppCompatActivity {
     Button stopListen;
     Button getFile;
     ListView peerListView;
-    volatile ConcurrentHashMap<String, Integer> peerList;
+
 
     private static final String BROADCAST_IP = "192.168.43.255";
     private static int PORT = 4446;
@@ -67,7 +66,6 @@ public class Sync extends AppCompatActivity {
         stopListen = (Button)findViewById(R.id.btn_stop_listener);
         getFile = (Button)findViewById(R.id.btn_get_file);
         peerListView = (ListView)findViewById(android.R.id.list);
-        peerList = new ConcurrentHashMap<String, Integer>();
 
         /*
          * Check if device is connected via wifi
@@ -157,7 +155,7 @@ public class Sync extends AppCompatActivity {
             Log.w("Httpd", "The server could not start.");
         }
         Log.w("Httpd", "Web server initialized.");
-}
+    }
 }
 
 

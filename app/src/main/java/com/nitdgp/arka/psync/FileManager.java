@@ -36,15 +36,15 @@ public class FileManager {
      * Class to save file description
      */
     class FileTable {
-        String fileID;
-        String fileName;
-        List sequence;
-        double fileSize;
-        String priority;
-        String timestamp;
-        String ttl;
-        String destination;
-        boolean destinationReachedStatus;
+        private String fileID;
+        private String fileName;
+        private List sequence;
+        private double fileSize;
+        private String priority;
+        private String timestamp;
+        private String ttl;
+        private String destination;
+        private boolean destinationReachedStatus;
 
         public FileTable(String fileID, String fileName, List sequence, double fileSize, String priority,
                          String timestamp, String ttl, String destination, boolean destinationReachedStatus){
@@ -89,6 +89,14 @@ public class FileManager {
 
         boolean getDestinationReachedStatus(){
             return this.destinationReachedStatus;
+        }
+
+        void setTtl(String ttl) {
+            this.ttl = ttl;
+        }
+
+        void setSequence(List sequence){
+            this.sequence = sequence;
         }
 
         void setDestinationReachedStatus(boolean status){
