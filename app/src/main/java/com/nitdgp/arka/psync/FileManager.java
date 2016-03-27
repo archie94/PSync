@@ -36,6 +36,7 @@ public class FileManager {
     final String DATABASE_NAME;
     final String DATABASE_PATH;
     final File FILES_PATH;
+    private FileManagerThread fileManagerThread = new FileManagerThread();
 
     public FileManager(String databaseName, String databaseDirectory, String syncDirectory){
         this.DATABASE_NAME = databaseName;
@@ -43,6 +44,62 @@ public class FileManager {
         this.FILES_PATH = new File(Environment.getExternalStorageDirectory() + syncDirectory);
         readDB();
     }
+
+    public void startFileManagert(){
+        if (!fileManagerThread.isRunning) {
+            Thread fileManagerThreadInstance = new Thread(fileManagerThread);
+            fileManagerThreadInstance.start();
+        }
+    }
+
+    public void stopFileManager() {
+        if(fileManagerThread.isRunning) {
+            fileManagerThread.stop();
+        }
+    }
+
+    public class FileManagerThread implements Runnable {
+        private boolean exit;
+        private boolean isRunning;
+
+        public FileManagerThread() {
+            this.exit = true;
+            this.isRunning = false;
+        }
+
+        @Override
+        public void run() {
+            try {
+                Log.d("DEBUG", "FileManager Thread started");
+                this.exit = false;
+                this.isRunning = true;
+                while(!this.exit) {
+                    Log.d("DEBUG", "FileManager Scanning..");
+                    updateFromFolder();
+                    writeDB();
+                    Thread.sleep(5*1000);
+                }
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            this.exit = false;
+            this.isRunning = false;
+
+            Log.d("DEBUG", "FileManager Thread Stopped");
+        }
+
+        public void stop() {
+            this.exit = true;
+        }
+    }
+
+
+
+
+
+
 
 
 
@@ -63,7 +120,6 @@ public class FileManager {
         FileTable newFileInfo = new FileTable( fileID, fileName, sequence, fileSize, priority, timestamp,
                 ttl, destination, destinationReachedStatus);
         fileTableHashMap.put( fileID, newFileInfo);
-        writeDB();
         Log.d("DEBUG", "FileManager Add to DB: " + fileName);
     }
 
