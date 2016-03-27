@@ -143,7 +143,7 @@ public class Sync extends AppCompatActivity {
         getFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                fileManager.updateFromFolder();
+                fileManager.startFileManagert();
                 /*try {
                     new FileTransporter().downloadFile();
                 } catch (MalformedURLException e) {
