@@ -30,6 +30,8 @@ public class Discoverer {
     final Thread[] thread = new Thread[3];
     final BroadcastThread broadcastThread;
     final ListenThread listenThread;
+    final PeerExpiryThread peerExpiryThread;
+
     Context mContext;
     volatile ConcurrentHashMap<String, Integer> peerList;
 
@@ -41,8 +43,10 @@ public class Discoverer {
         peerList = new ConcurrentHashMap<String, Integer>();
         broadcastThread = new BroadcastThread(BROADCAST_IP, PORT);
         listenThread = new ListenThread();
+        peerExpiryThread = new PeerExpiryThread();
         thread[0] = new Thread(broadcastThread);
         thread[1] = new Thread(listenThread);
+        thread[2] = new Thread(peerExpiryThread);
     }
 
     public void startBroadcast(){
@@ -82,14 +86,29 @@ public class Discoverer {
         }
     }
 
+    public void startPeerExpiry(){
+        if (!peerExpiryThread.isRunning) {
+            thread[2] = new Thread(peerExpiryThread);
+            thread[2].start();
+        }
+    }
+
+    public void stopPeerExpiry() {
+        if(peerExpiryThread.isRunning) {
+            peerExpiryThread.stop();
+        }
+    }
+
     public void startDiscoverer(){
         startBroadcast();
         startListener();
+        startPeerExpiry();
     }
 
     public void stopDiscoverer(){
         stopBroadcast();
         stopListener();
+        stopPeerExpiry();
     }
 
 
@@ -122,12 +141,7 @@ public class Discoverer {
                 while(!this.exit) {
                     datagramPacket = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(BROADCAST_IP), PORT);
                     datagramSocket.send(datagramPacket);
-                    /*Discoverer.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(Discoverer.this, "Server : packet send", Toast.LENGTH_SHORT).show();
-                        }
-                    });*/
+
                     Log.d("DEBUG", "Broadcast Packet Sent");
                     Thread.sleep(3000);
                 }
@@ -144,14 +158,7 @@ public class Discoverer {
             }
             this.exit = false;
             this.isRunning = false;
-            /*
-            Discoverer.this.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(Discoverer.this, "Broadcasting stopped", Toast.LENGTH_SHORT).show();
-                }
-            });
-            */
+
             Log.d("DEBUG", "Broadcasting Stopped");
         }
 
@@ -187,13 +194,6 @@ public class Discoverer {
                 datagramSocket = new DatagramSocket(PORT, InetAddress.getByName("0.0.0.0"));
                 datagramSocket.setBroadcast(true);
 
-                /*Discoverer.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(Discoverer.this, "Client : socket created", Toast.LENGTH_SHORT).show();
-                    }
-                });
-                */
                 Log.d("DEBUG", "ListenerThread Start");
                 this.isRunning = true;
                 while(!this.exit) {
@@ -215,22 +215,10 @@ public class Discoverer {
                 } // end of while
             }catch (UnknownHostException e){
 
-                /*Discoverer.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(Discoverer.this, "Client exception 1", Toast.LENGTH_SHORT).show();
-                    }
-                });
-                */
+
             }catch (IOException e){
 
-                /*Discoverer.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(Discoverer.this, "Client exception 2", Toast.LENGTH_SHORT).show();
-                    }
-                });
-                */
+
             } finally {
                 datagramSocket.close();
             }
@@ -238,13 +226,7 @@ public class Discoverer {
             this.isRunning = false;
             multicastLock.release();
             Log.d("DEBUG", "ListenerThread Stop");
-            /*Discoverer.this.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(Discoverer.this, "Listening stopped", Toast.LENGTH_SHORT).show();
-                }
-            });
-            */
+
         }
 
         public void stop() {
@@ -267,43 +249,31 @@ public class Discoverer {
             Put the ip address in the table
             Set its counter to 0
              */
-            Log.d("DEBUG", "ListenerThread Receive:" + s);
+            Log.d("DEBUG", "ListenerThread Receive Broadcaset:" + s);
             peerList.put(s, 0);
         }
     }
 
-    /**
-     * Thread to update the ListView of available peers
+    /*
+     * Thread to expire peers after T seconds of inactivity
      */
-/*    public class UpdatePeerListViewThread implements Runnable {
-        boolean exit = false;
-
-        Context context;
-        public UpdatePeerListViewThread(Context context) {
-            this.context = context;
-        }
+    public class PeerExpiryThread implements Runnable {
+        boolean exit = true;
+        boolean isRunning = false;
 
         @Override
         public void run() {
+            exit = false;
+            isRunning = true;
             while (!exit) {
-                Discoverer.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        List<String> peer = new ArrayList<String>();
-                        List<Integer> counter = new ArrayList<Integer>();
-                        for (String s : peerList.keySet()) {
-                            if(peerList.get(s) >= 10) {
-                                peerList.remove(s);
-                            } else {
-                                peerList.put(s, peerList.get(s) + 1);
-                                peer.add(s);
-                                counter.add(peerList.get(s));
-                            }
-                        }
-                        PeerListView peerListRow = new PeerListView(context, peer, counter);
-                        peerListView.setAdapter(peerListRow);
+                for (String s : peerList.keySet()) {
+                    if(peerList.get(s) >= 10) {
+                        peerList.remove(s);
+                        Log.d("DEBUG", "PeerExpiryThread Remove:" + s);
+                    } else {
+                        peerList.put(s, peerList.get(s) + 1);
                     }
-                });
+                }
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -311,6 +281,7 @@ public class Discoverer {
                 }
             }
             exit = false;
+            isRunning = false;
         }
 
         public void stop() {
@@ -318,8 +289,5 @@ public class Discoverer {
         }
     }
 
-    public void displayToast(String msg){
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-    }
-*/
+
 }
