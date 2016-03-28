@@ -15,9 +15,12 @@ import java.util.Map;
 
 
 public class WebServer extends NanoHTTPD {
+    Controller controller;
 
-    public WebServer(int port) {
+    public WebServer(int port, Controller controller) {
         super(port);
+        this.controller = controller;
+
     }
 
     @Override
@@ -25,12 +28,17 @@ public class WebServer extends NanoHTTPD {
                           Map<String, String> header,
                           Map<String, String> parameters,
                           Map<String, String> files) {
-        File f = new File(Environment.getExternalStorageDirectory()
-                + "/www/movie.mkv");
-        String mimeType =  "application/octet-stream";
-
-
-        return serveFile(uri, header, f, mimeType);
+        String path = controller.urlResolver(uri);
+        File f;
+        Log.d("DEBUG", "WebServer: GET: " + path);
+        if(!path.equals("")){
+            f = new File(path);
+            String mimeType =  "application/octet-stream";
+            return serveFile(uri, header, f, mimeType);
+        }
+        else {
+            return createResponse(Response.Status.NOT_FOUND, NanoHTTPD.MIME_PLAINTEXT, new ByteArrayInputStream("404".getBytes(StandardCharsets.UTF_8)), "404".length());
+        }
     }
 
     //Announce that the file server accepts partial content requests
