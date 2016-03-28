@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +34,7 @@ public class Sync extends AppCompatActivity {
 
     private static final String BROADCAST_IP = "192.168.43.255";
     private static final int PORT = 4446;
+    private static final int syncInterval = 5;
 
     private static String syncDirectory = "/www/sync/";
     private static String databaseDirectory = "/www/database/";
@@ -43,6 +45,8 @@ public class Sync extends AppCompatActivity {
     private WebServer webServer;
     Discoverer discoverer = new Discoverer(BROADCAST_IP, PORT, this);
     FileManager fileManager = new FileManager(databaseName, databaseDirectory, syncDirectory);
+    FileTransporter fileTransporter = new FileTransporter(syncDirectory);
+    Controller controller = new Controller(discoverer, fileManager, fileTransporter, syncInterval);
     /* Methods */
     public void displayToast(String msg){
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
@@ -123,6 +127,18 @@ public class Sync extends AppCompatActivity {
                 }*/
             }
         });
+
+        listen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    new Thread(fileTransporter.new ListFetcher(new URL("http://127.0.0.1:8080/list"))).start();
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
     }
 
     @Override
@@ -131,7 +147,7 @@ public class Sync extends AppCompatActivity {
         /*
         Start HTTP server
          */
-        webServer = new WebServer(8080);
+        webServer = new WebServer(8080, controller);
         try {
             webServer.start();
         } catch(IOException ioe) {

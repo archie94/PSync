@@ -7,6 +7,7 @@ package com.nitdgp.arka.psync;
 import android.util.Log;
 
 import java.io.File;
+import java.net.URL;
 
 /**
  * The Controller module : Core module that takes care
@@ -68,17 +69,15 @@ public class Controller {
         }
     }
 
-    /**
-     * calls sendFileList of all peers
-     */
-    void requestRemoteFiles() {
-        for(String peerAddress : discoverer.peerList.keySet()) {
-            sendFileList(peerAddress);
+    public String urlResolver(String  uri){
+        String parameter = uri.substring(1);
+        Log.d("DEBUG", "Controller URL Request recv: " + parameter);
+        if(parameter.equals("list")){
+            return fileManager.DATABASE_PATH;
         }
-    }
-
-    void sendFileList(String peerAddress) {
-
+        else {
+            return "";
+        }
     }
 
 }
