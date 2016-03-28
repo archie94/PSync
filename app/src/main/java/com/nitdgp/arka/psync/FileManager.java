@@ -128,13 +128,14 @@ public class FileManager {
      */
     private void writeDB() {
         try{
-            List <FileTable> fileList = new ArrayList<FileTable>();
+            /*List <FileTable> fileList = new ArrayList<FileTable>();
             for(String s : fileTableHashMap.keySet()) {
                 fileList.add(fileTableHashMap.get(s));
-            }
+            }*/
+
             FileOutputStream fileOutputStream = new FileOutputStream(DATABASE_PATH);
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
-            objectOutputStream.writeObject(fileList);
+            objectOutputStream.writeObject(fileTableHashMap);
             objectOutputStream.close();
             fileOutputStream.close();
 
@@ -150,11 +151,11 @@ public class FileManager {
      */
     private void readDB() {
         Log.d("DEBUG", "FileManager reading from fileDB");
-        List <FileTable> fileList = null;
+        //List <FileTable> fileList = null;
         try{
             FileInputStream fileInputStream = new FileInputStream(DATABASE_PATH);
             ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-            fileList = (List<FileTable>) objectInputStream.readObject();
+            fileTableHashMap = (ConcurrentHashMap<String, FileTable>) objectInputStream.readObject();
             objectInputStream.close();
             fileInputStream.close();
         } catch (FileNotFoundException e) {
@@ -166,12 +167,7 @@ public class FileManager {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-        if(fileList != null) {
-            for (int i = 0; i < fileList.size(); i++) {
-                fileTableHashMap.put(fileList.get(i).getFileID(), fileList.get(i));
-                Log.d("DEBUG", "FileManaager Add to DB from fileDB: " + fileList.get(i).getFileName());
-            }
-        }
+
     }
 
     /**
