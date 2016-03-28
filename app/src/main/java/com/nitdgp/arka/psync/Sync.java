@@ -17,6 +17,8 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -83,6 +85,9 @@ public class Sync extends AppCompatActivity {
             displayToast("Not connected");
         }
 
+        PeerListUIThread peerListUIThread = new PeerListUIThread(this);
+        new Thread(peerListUIThread).start();
+
 //        final UpdatePeerListViewThread updateView = new UpdatePeerListViewThread(this);
 //        final Discoverer.BroadcastThread broadcastThread = discoverer.new BroadcastThread(BROADCAST_IP, PORT);
 //        final ListenThread listenThread = new ListenThread();
@@ -92,6 +97,7 @@ public class Sync extends AppCompatActivity {
 
         /**
          * Start broadcasting if device is not already broadcasting
+         * Start listening for broadcasts if not already listening
          */
         broadcast.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -105,41 +111,7 @@ public class Sync extends AppCompatActivity {
                 discoverer.stopDiscoverer();
             }
         });
-        /**
-         * Start listening for broadcasts if not already listening
-         */
-/*        listen.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-*/                /*
-                Check for any zombie thread waiting for broadcast
-                If there is no zombie thread start a new thread to
-                listen for broadcast
-                else revive zombie thread
-                 */
-/*                if(!clientRunning ) {
-                    if(thread[1].isAlive()){
-                        listenThread.revive();
-                    }else {
-                        thread[1] = new Thread(listenThread);
-                        thread[1].start();
-                    }
-                    thread[2] = new Thread(updateView);
-                    thread[2].start();
-                    clientRunning = true;
-                }
-            }
-        });
-        stopListen.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (clientRunning) {
-                    listenThread.stop();
-                    updateView.stop();
-                }
-            }
-        });
-*/
+
         getFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -151,6 +123,11 @@ public class Sync extends AppCompatActivity {
                 }*/
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         /*
         Start HTTP server
          */
@@ -161,6 +138,56 @@ public class Sync extends AppCompatActivity {
             Log.w("Httpd", "The server could not start.");
         }
         Log.w("Httpd", "Web server initialized.");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        webServer.stop();
+    }
+
+    public class PeerListUIThread implements Runnable {
+        Context context;
+        boolean exit;
+        boolean isRunning;
+
+        public PeerListUIThread(Context context) {
+            this.context = context;
+            exit = false;
+        }
+
+        @Override
+        public void run() {
+            exit = false;
+            isRunning = true;
+            while (!exit) {
+                Sync.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        final List<String> address = new ArrayList<>();
+                        final List<Integer> counter = new ArrayList<>();
+                        for (String s : discoverer.peerList.keySet()) {
+                            address.add(s);
+                            counter.add(discoverer.peerList.get(s));
+                        }
+                        PeerListView peerListRow = new PeerListView(context, address, counter);
+                        peerListView.setAdapter(peerListRow);
+                    }
+                });
+                // Update UI after every 1 second
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            exit = true;
+            isRunning = false;
+        }
+
+        public void stop() {
+            exit = true;
+        }
     }
 }
 

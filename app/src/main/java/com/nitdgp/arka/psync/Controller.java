@@ -22,4 +22,17 @@ public class Controller {
         this.syncComplete = false;
     }
 
+    /**
+     * calls sendFileList of all peers
+     */
+    void requestRemoteFiles() {
+        for(String peerAddress : discoverer.peerList.keySet()) {
+            sendFileList(peerAddress);
+        }
+    }
+
+    void sendFileList(String peerAddress) {
+
+    }
+
 }

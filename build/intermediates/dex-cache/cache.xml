@@ -2,39 +2,39 @@
 <items version="2" >
 
     <item
-        jar="/home/bishakh/Android/Sdk/extras/android/m2repository/com/android/support/support-annotations/22.2.1/support-annotations-22.2.1.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="61a0ff5c29295ec56d7e0bd3d25d95dbf71b4b2b">
-        <dex dex="/home/bishakh/projects/disarm/psyncAndroid/PSync/app/build/intermediates/pre-dexed/debug/support-annotations-22.2.1-34758872572588665e1c9462b3bd88c4cb93efd3.jar" />
-    </item>
-    <item
-        jar="/home/bishakh/projects/disarm/psyncAndroid/PSync/app/build/intermediates/exploded-aar/com.android.support/appcompat-v7/22.2.1/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="4486e953d1f35f8ccab098b1dd67146366d5f731">
-        <dex dex="/home/bishakh/projects/disarm/psyncAndroid/PSync/app/build/intermediates/pre-dexed/debug/classes-2d7a6eb4f1a0567ddc99ef64bbd42021870c2982.jar" />
-    </item>
-    <item
-        jar="/home/bishakh/projects/disarm/psyncAndroid/PSync/app/libs/gson-2.6.2.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="f1bc476cc167b18e66c297df599b2377131a8947">
-        <dex dex="/home/bishakh/projects/disarm/psyncAndroid/PSync/app/build/intermediates/pre-dexed/debug/gson-2.6.2-5129ea23186b5c0ecb30c1af4caca0ddfada49ea.jar" />
-    </item>
-    <item
-        jar="/home/bishakh/projects/disarm/psyncAndroid/PSync/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.1/jars/libs/internal_impl-22.2.1.jar"
+        jar="/home/arka/PSync/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.1/jars/libs/internal_impl-22.2.1.jar"
         jumboMode="false"
         revision="22.0.1"
         sha1="c471eaaba13ff64f6e0383d1c30a9cdc9a97efeb">
-        <dex dex="/home/bishakh/projects/disarm/psyncAndroid/PSync/app/build/intermediates/pre-dexed/debug/internal_impl-22.2.1-0f5494ff97145f39778bb90888407a9c1847876f.jar" />
+        <dex dex="/home/arka/PSync/app/build/intermediates/pre-dexed/debug/internal_impl-22.2.1-ae9d712ce7b294889ade0e19aa0f9095860d8b4a.jar" />
     </item>
     <item
-        jar="/home/bishakh/projects/disarm/psyncAndroid/PSync/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.1/jars/classes.jar"
+        jar="/home/arka/PSync/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.1/jars/classes.jar"
         jumboMode="false"
         revision="22.0.1"
         sha1="f8efd0096475e0daf054267b61544e10dc776503">
-        <dex dex="/home/bishakh/projects/disarm/psyncAndroid/PSync/app/build/intermediates/pre-dexed/debug/classes-04e42949cc79cd413247a8b58d5449e4eeed47be.jar" />
+        <dex dex="/home/arka/PSync/app/build/intermediates/pre-dexed/debug/classes-1f636d912d2f5be068e7d31f453351078e4d9215.jar" />
+    </item>
+    <item
+        jar="/home/arka/PSync/app/build/intermediates/exploded-aar/com.android.support/appcompat-v7/22.2.1/jars/classes.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="4486e953d1f35f8ccab098b1dd67146366d5f731">
+        <dex dex="/home/arka/PSync/app/build/intermediates/pre-dexed/debug/classes-6d63964753808922af890735b860976e846e7c96.jar" />
+    </item>
+    <item
+        jar="/home/arka/Android/Sdk/extras/android/m2repository/com/android/support/support-annotations/22.2.1/support-annotations-22.2.1.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="61a0ff5c29295ec56d7e0bd3d25d95dbf71b4b2b">
+        <dex dex="/home/arka/PSync/app/build/intermediates/pre-dexed/debug/support-annotations-22.2.1-70137e8c8fd39099c97f55995a0322597f5754a7.jar" />
+    </item>
+    <item
+        jar="/home/arka/PSync/app/libs/gson-2.6.2.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="f1bc476cc167b18e66c297df599b2377131a8947">
+        <dex dex="/home/arka/PSync/app/build/intermediates/pre-dexed/debug/gson-2.6.2-85653c6b2f132629f6f0a218985d3fa16c618504.jar" />
     </item>
 
 </items>
