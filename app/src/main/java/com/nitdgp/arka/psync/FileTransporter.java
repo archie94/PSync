@@ -12,18 +12,28 @@ import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The File Transporter module : request a file from a peer node
  */
 public class FileTransporter {
+    List<Thread> ongoingDownloadThreads = new ArrayList<Thread>();
+    String syncDirectory;
 
-    public void downloadFile() throws MalformedURLException {
-        File f = new File(Environment.getExternalStorageDirectory()
-                + "/www/out1.mp4");
-        ResumeDownloadThread resumeDownloadThread = new ResumeDownloadThread(
-                new URL("http://192.168.0.149:8000/1.mp4"), f, 0, 0);
-        new Thread(resumeDownloadThread).start();
+    public FileTransporter(String syncDirectory){
+        this.syncDirectory = syncDirectory;
+    }
+
+
+    public void downloadFile(String fileID, String fileName, String peerIP) throws MalformedURLException {
+        File f = new File(Environment.getExternalStorageDirectory() + syncDirectory + "/" + fileName);
+        URL fileUrl = new URL("http://"+ peerIP +":8000/getFile/" + fileID);
+        ResumeDownloadThread resumeDownloadThread = new ResumeDownloadThread(fileUrl , f, 0, 0);
+        Thread t = new Thread(resumeDownloadThread);
+        t.start();
+        ongoingDownloadThreads.add(t);
     }
 
     class ResumeDownloadThread implements Runnable {
@@ -49,13 +59,19 @@ public class FileTransporter {
             RandomAccessFile raf = null;
 
             try {
+                String byteRange;
                 // open Http connection to URL
                 HttpURLConnection connection = (HttpURLConnection)url.openConnection();
                 Log.d("DEBUG:FILE TRANSPORTER", "URl is" + url);
 
 
                 // set the range of byte to download
-                String byteRange = startByte + "-" /*+ endByte*/;
+                if(endByte < 0) {
+                    byteRange = startByte + "-" /*+ endByte*/;
+                }
+                else {
+                    byteRange = startByte + "-" + endByte;
+                }
                 //conn.setRequestProperty("Range", "bytes=" + byteRange);
                 connection.setRequestMethod("GET");
                 connection.setConnectTimeout( 5*1000);
