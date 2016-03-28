@@ -7,6 +7,8 @@ package com.nitdgp.arka.psync;
 import android.os.Environment;
 import android.util.Log;
 
+import com.google.gson.Gson;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FileManager {
 
     ConcurrentHashMap<String, FileTable> fileTableHashMap = new ConcurrentHashMap<String, FileTable>();
+    Gson gson = new Gson();
     final String DATABASE_NAME;
     final String DATABASE_PATH;
     final File FILES_PATH;
@@ -95,12 +98,9 @@ public class FileManager {
         }
     }
 
-
-
-
-
-
-
+    public String getFileDBJson(){
+        return gson.toJson(fileTableHashMap);
+    }
 
 
     /**
@@ -115,7 +115,7 @@ public class FileManager {
      * @param destination
      * @param destinationReachedStatus
      */
-    public void enterFile(String fileID, String fileName, List sequence, double fileSize, int priority,
+    private void enterFile(String fileID, String fileName, List sequence, double fileSize, int priority,
                           String timestamp, String ttl, String destination, boolean destinationReachedStatus){
         FileTable newFileInfo = new FileTable( fileID, fileName, sequence, fileSize, priority, timestamp,
                 ttl, destination, destinationReachedStatus);
@@ -196,6 +196,17 @@ public class FileManager {
                 enterFile(fileID, file.getName(), seq, fileSize, 1, timeStamp, ttl, destination, false);
             }
 
+        }
+
+        for (String key : fileTableHashMap.keySet()) {
+            FileTable fileInfo = fileTableHashMap.get(key);
+            String fileName = fileInfo.getFileName();
+            boolean check = new File(FILES_PATH + "/" + fileName).exists();
+            if(!check){
+                fileTableHashMap.remove(key);
+                Log.d("DEBUG", "FileManaager Remove from DB " + fileName);
+
+            }
         }
 
         // add , remove or update database
