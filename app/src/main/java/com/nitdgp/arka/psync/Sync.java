@@ -119,7 +119,7 @@ public class Sync extends AppCompatActivity {
         getFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                fileManager.startFileManagert();
+                fileManager.startFileManager();
                 /*try {
                     new FileTransporter().downloadFile();
                 } catch (MalformedURLException e) {
@@ -131,12 +131,7 @@ public class Sync extends AppCompatActivity {
         listen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                try {
-                    new Thread(fileTransporter.new ListFetcher(new URL("http://127.0.0.1:8080/list"))).start();
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                }
-
+                controller.startController();
             }
         });
     }

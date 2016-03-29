@@ -48,7 +48,7 @@ public class FileManager {
         readDB();
     }
 
-    public void startFileManagert(){
+    public void startFileManager(){
         if (!fileManagerThread.isRunning) {
             Thread fileManagerThreadInstance = new Thread(fileManagerThread);
             fileManagerThreadInstance.start();

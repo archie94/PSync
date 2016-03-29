@@ -6,12 +6,16 @@ package com.nitdgp.arka.psync;
 
 import android.util.Log;
 
+import com.google.gson.Gson;
+
 import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The Controller module : Core module that takes care
- of the role based and device priority scheduling
+ * of the role based and device priority scheduling
  */
 public class Controller {
 
@@ -19,8 +23,10 @@ public class Controller {
     FileManager fileManager;
     FileTransporter fileTransporter;
     int syncInterval;
-    ControllerThread controllerThread = new ControllerThread();
+    ControllerThread controllerThread = new ControllerThread(this);
     Thread mcontrollerThread = new Thread(controllerThread);
+
+    ConcurrentHashMap<String, ConcurrentHashMap<String, FileTable>> peerFileTableHashMap;
 
     public Controller(Discoverer discoverer, FileManager fileManager, FileTransporter fileTransporter, int syncInterval) {
         this.discoverer = discoverer;
@@ -43,16 +49,48 @@ public class Controller {
         }
     }
 
+    void peerFilesFetched(String peerAddress, ConcurrentHashMap<String, FileTable> remoteFiles) {
+        Gson gson = new Gson();
+        Log.d("DEBUG:Controller file fetch", "Response code : " + gson.toJson(remoteFiles).toString());
+    }
 
+    public String urlResolver(String  uri){
+        String parameter = uri.substring(1);
+        Log.d("DEBUG", "Controller URL Request recv: " + parameter);
+        if(parameter.equals("list")){
+            return fileManager.DATABASE_PATH;
+        }
+        else {
+            return "";
+        }
+    }
+
+    /**
+     * Thread to fetch the file list from all the available peers
+     */
     public class ControllerThread implements Runnable {
         boolean exit = true;
         boolean isRunning = false;
+        Controller controller;
+
+        public ControllerThread(Controller controller) {
+            this.controller = controller;
+        }
 
         @Override
         public void run() {
             exit = false;
             isRunning = true;
+            Log.d("DEBUG:Controller thread ", "running : " );
             while (!exit) {
+
+                for(String s : discoverer.peerList.keySet()) {
+                    try {
+                        new Thread(fileTransporter.new ListFetcher(controller, new URL("http://"+s+":8080/list"), s)).start();
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    }
+                }
 
                 try {
                     Thread.sleep(syncInterval * 1000);
@@ -68,16 +106,4 @@ public class Controller {
             exit = true;
         }
     }
-
-    public String urlResolver(String  uri){
-        String parameter = uri.substring(1);
-        Log.d("DEBUG", "Controller URL Request recv: " + parameter);
-        if(parameter.equals("list")){
-            return fileManager.DATABASE_PATH;
-        }
-        else {
-            return "";
-        }
-    }
-
 }

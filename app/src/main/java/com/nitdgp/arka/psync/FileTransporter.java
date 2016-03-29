@@ -40,6 +40,7 @@ public class FileTransporter {
         ongoingDownloadThreads.add(t);
     }
 
+
     class ResumeDownloadThread implements Runnable {
         URL url;
         File outputFile;
@@ -135,18 +136,23 @@ public class FileTransporter {
         }
     }
 
-
-
+    /**
+     * Thread to fetch the list of files from a peer
+     */
     class ListFetcher implements Runnable {
         URL url;
+        String peerAddress;
         final int BUFFER_SIZE = 10240;
+        Controller controller;
 
         boolean mIsFinished = false;
         boolean DOWNLOADING = true;
         boolean mState = true;
 
-        public ListFetcher(URL url){
+        public ListFetcher(Controller controller, URL url, String peerAddress){
             this.url = url;
+            this.peerAddress = peerAddress;
+            this.controller = controller;
         }
 
         @Override
@@ -165,8 +171,8 @@ public class FileTransporter {
 
                 //conn.setRequestProperty("Range", "bytes=" + byteRange);
                 connection.setRequestMethod("GET");
-                connection.setConnectTimeout( 5*1000);
-                connection.setReadTimeout(5*1000);
+                connection.setConnectTimeout(5 * 1000);
+                connection.setReadTimeout(5 * 1000);
 
                 Log.d("DEBUG:FILE TRANSPORTER", "Connection created" + byteRange);
 
@@ -184,32 +190,18 @@ public class FileTransporter {
                 // get the input stream
                 in = new BufferedInputStream(connection.getInputStream());
                 ObjectInputStream objectInputStream = new ObjectInputStream(in);
-                /*
-                byte data[] = new byte[BUFFER_SIZE];
-                int numBytesRead;
-                while(*//*(mState == DOWNLOADING) &&*//* ((numBytesRead = in.read(data,0,BUFFER_SIZE)) != -1))
-                {
-                    // write to buffer
-                    raf.write(data,0,numBytesRead);
-                    // increase the startByte for resume later
-                    startByte += numBytesRead;
-                    // increase the downloaded size
-                    Log.d("DEBUG:FILE TRANSPORTER", "Fetching  data " + startByte);
-                }
-                */
+
                 ConcurrentHashMap fileTableHashMap;
                 fileTableHashMap = (ConcurrentHashMap<String, FileTable>) objectInputStream.readObject();
-                Gson gson = new Gson();
-                Log.d("DEBUG:FILE TRANSPORTER", "List Json: " + gson.toJson(fileTableHashMap).toString());
-                if (mState == DOWNLOADING) {
-                    mIsFinished = true;
-                }
+                controller.peerFilesFetched(peerAddress, fileTableHashMap);
+                //Gson gson = new Gson();
+                //Log.d("DEBUG:FILE TRANSPORTER", "List Json: " + gson.toJson(fileTableHashMap).toString());
+
+
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.d("DEBUG:FILE TRANSPORTER", "Connection not established" + e);
             } finally {
-
-
                 if (in != null) {
                     try {
                         in.close();
