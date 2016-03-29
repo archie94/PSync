@@ -24,8 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 public class Sync extends AppCompatActivity {
-    Button broadcast;
-    Button stopBroadcast;
+    Button startSync;
+    Button stopSync;
     Button listen;
     Button stopListen;
     Button getFile;
@@ -71,9 +71,9 @@ public class Sync extends AppCompatActivity {
         /*
         Initialise
          */
-        broadcast = (Button)findViewById(R.id.btn_broadcast);
+        startSync = (Button)findViewById(R.id.btn_start_sync);
         listen = (Button)findViewById(R.id.btn_listen);
-        stopBroadcast = (Button)findViewById(R.id.btn_stop_broadcast);
+        stopSync = (Button)findViewById(R.id.btn_stop_sync);
         stopListen = (Button)findViewById(R.id.btn_stop_listener);
         getFile = (Button)findViewById(R.id.btn_get_file);
         peerListView = (ListView)findViewById(android.R.id.list);
@@ -103,35 +103,20 @@ public class Sync extends AppCompatActivity {
          * Start broadcasting if device is not already broadcasting
          * Start listening for broadcasts if not already listening
          */
-        broadcast.setOnClickListener(new View.OnClickListener() {
+        startSync.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 discoverer.startDiscoverer();
+                fileManager.startFileManager();
+                controller.startController();
             }
         });
-        stopBroadcast.setOnClickListener(new View.OnClickListener() {
+        stopSync.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 discoverer.stopDiscoverer();
-            }
-        });
-
-        getFile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                fileManager.startFileManager();
-                /*try {
-                    new FileTransporter().downloadFile();
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                }*/
-            }
-        });
-
-        listen.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                controller.startController();
+                fileManager.stopFileManager();
+                controller.stopController();
             }
         });
     }

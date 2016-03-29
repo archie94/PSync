@@ -26,13 +26,14 @@ public class Controller {
     ControllerThread controllerThread = new ControllerThread(this);
     Thread mcontrollerThread = new Thread(controllerThread);
 
-    ConcurrentHashMap<String, ConcurrentHashMap<String, FileTable>> peerFileTableHashMap;
+    ConcurrentHashMap<String, ConcurrentHashMap<String, FileTable>> remotePeerFileTableHashMap;
 
     public Controller(Discoverer discoverer, FileManager fileManager, FileTransporter fileTransporter, int syncInterval) {
         this.discoverer = discoverer;
         this.fileManager = fileManager;
         this.syncInterval = syncInterval;
         this.fileTransporter = fileTransporter;
+        remotePeerFileTableHashMap = new ConcurrentHashMap<>();
     }
 
 
@@ -49,11 +50,6 @@ public class Controller {
         }
     }
 
-    void peerFilesFetched(String peerAddress, ConcurrentHashMap<String, FileTable> remoteFiles) {
-        Gson gson = new Gson();
-        Log.d("DEBUG:Controller file fetch", "Response code : " + gson.toJson(remoteFiles).toString());
-    }
-
     public String urlResolver(String  uri){
         String parameter = uri.substring(1);
         Log.d("DEBUG", "Controller URL Request recv: " + parameter);
@@ -63,6 +59,18 @@ public class Controller {
         else {
             return "";
         }
+    }
+
+    /**
+     * Collect the remote file info from the available peers
+     * Called when ListFetcher thread has received the file list from peer
+     * @param peerAddress : the address of the current peer
+     * @param remoteFiles : the fileTable of the current peer
+     */
+    void peerFilesFetched(String peerAddress, ConcurrentHashMap<String, FileTable> remoteFiles) {
+        Gson gson = new Gson();
+        Log.d("DEBUG:Controller file fetch", "Response code : " + gson.toJson(remoteFiles).toString());
+        remotePeerFileTableHashMap.put(peerAddress, remoteFiles);
     }
 
     /**
