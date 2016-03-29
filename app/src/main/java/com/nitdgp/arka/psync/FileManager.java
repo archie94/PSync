@@ -22,7 +22,6 @@ import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -115,7 +114,7 @@ public class FileManager {
      * @param destination
      * @param destinationReachedStatus
      */
-    private void enterFile(String fileID, String fileName, List sequence, double fileSize, int priority,
+    private void enterFile(String fileID, String fileName, List<Long> sequence, double fileSize, int priority,
                           String timestamp, String ttl, String destination, boolean destinationReachedStatus){
         FileTable newFileInfo = new FileTable( fileID, fileName, sequence, fileSize, priority, timestamp,
                 ttl, destination, destinationReachedStatus);
@@ -255,7 +254,7 @@ public class FileManager {
 class FileTable implements java.io.Serializable{
     private String fileID;
     private String fileName;
-    private List sequence;
+    private List<Long> sequence;
     private double fileSize;
     private int priority;
     private String timestamp;
@@ -263,7 +262,7 @@ class FileTable implements java.io.Serializable{
     private String destination;
     private boolean destinationReachedStatus;
 
-    public FileTable(String fileID, String fileName, List sequence, double fileSize, int priority,
+    public FileTable(String fileID, String fileName, List<Long> sequence, double fileSize, int priority,
                      String timestamp, String ttl, String destination, boolean destinationReachedStatus){
         this.fileID = fileID;
         this.fileName = fileName;
@@ -282,6 +281,10 @@ class FileTable implements java.io.Serializable{
 
     String getFileName(){
         return this.fileName;
+    }
+
+    List<Long> getSequence() {
+        return this.sequence;
     }
 
     double getFileSize(){
@@ -312,7 +315,7 @@ class FileTable implements java.io.Serializable{
         this.ttl = ttl;
     }
 
-    void setSequence(List sequence){
+    void setSequence(List<Long> sequence){
         this.sequence = sequence;
     }
 

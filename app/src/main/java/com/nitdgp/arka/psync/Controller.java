@@ -8,7 +8,6 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 
-import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +26,7 @@ public class Controller {
     Thread mcontrollerThread = new Thread(controllerThread);
 
     ConcurrentHashMap<String, ConcurrentHashMap<String, FileTable>> remotePeerFileTableHashMap;
+    ConcurrentHashMap<String, ConcurrentHashMap<String, FileTable>> missingFileTableHashMap;
 
     public Controller(Discoverer discoverer, FileManager fileManager, FileTransporter fileTransporter, int syncInterval) {
         this.discoverer = discoverer;
@@ -34,6 +34,7 @@ public class Controller {
         this.syncInterval = syncInterval;
         this.fileTransporter = fileTransporter;
         remotePeerFileTableHashMap = new ConcurrentHashMap<>();
+        missingFileTableHashMap = new ConcurrentHashMap<>();
     }
 
 
@@ -74,6 +75,68 @@ public class Controller {
     }
 
     /**
+     * Find the missing / incomplete files from peers
+     */
+    void findMissingFiles() {
+        /*
+        Iterate over all peers
+         */
+        for(String peers : remotePeerFileTableHashMap.keySet()) {
+            /*
+            Iterate over all files
+             */
+            for( String files : remotePeerFileTableHashMap.get(peers).keySet()) {
+                /*
+                Find whether the peer has any file which is missing in device
+                 */
+                boolean isMissing = false;
+                for( String myFiles : fileManager.fileTableHashMap.keySet()) {
+                    if(files.equals(myFiles) == true) { // check whether file is same as remote file
+                        if(fileManager.fileTableHashMap.get(myFiles).getSequence().get(1) ==
+                                fileManager.fileTableHashMap.get(myFiles).getFileSize()) { // complete file available
+                            isMissing = false;
+                            break;
+                        } else if(fileManager.fileTableHashMap.get(myFiles).getSequence().get(1) <
+                                remotePeerFileTableHashMap.get(peers).get(files).getSequence().get(1)){
+                            isMissing = true;
+                            break;
+                        }
+                    }else {
+                        isMissing = true;
+                    }
+                }
+                if(isMissing) { // file is missing
+                    if(missingFileTableHashMap.get(peers) == null) {
+                        missingFileTableHashMap.put(peers, new ConcurrentHashMap<String, FileTable>());
+                        missingFileTableHashMap.get(peers).put(files, remotePeerFileTableHashMap.get(peers).get(files));
+                    }else {
+                        missingFileTableHashMap.get(peers).put(files, remotePeerFileTableHashMap.get(peers).get(files));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Remove the missing files from the peers which have expired
+     */
+    void removeExpiredMissingFiles() {
+        for(String peer : missingFileTableHashMap.keySet()) {
+            if( discoverer.peerList.get(peer) == null) { // the peer has expired
+                missingFileTableHashMap.remove(peer);
+            }
+        }
+    }
+
+    void removeExpiredRemoteFiles() {
+        for(String peer : remotePeerFileTableHashMap.keySet()) {
+            if( discoverer.peerList.get(peer) == null) { // the peer has expired
+                remotePeerFileTableHashMap.remove(peer);
+            }
+        }
+    }
+
+    /**
      * Thread to fetch the file list from all the available peers
      */
     public class ControllerThread implements Runnable {
@@ -99,6 +162,12 @@ public class Controller {
                         e.printStackTrace();
                     }
                 }
+
+                removeExpiredMissingFiles();
+                removeExpiredRemoteFiles();
+                findMissingFiles();
+                Gson gson = new Gson();
+                Log.d("DEBUG:Controller thread ", "missing files : " + gson.toJson(missingFileTableHashMap).toString());
 
                 try {
                     Thread.sleep(syncInterval * 1000);

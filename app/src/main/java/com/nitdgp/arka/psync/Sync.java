@@ -16,11 +16,8 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 public class Sync extends AppCompatActivity {
@@ -40,7 +37,7 @@ public class Sync extends AppCompatActivity {
     private static String databaseDirectory = "/www/database/";
     private static String databaseName = "fileDB.txt";
 
-
+    PeerListUIThread peerListUIThread = new PeerListUIThread(this);
 
     private WebServer webServer;
     Discoverer discoverer = new Discoverer(BROADCAST_IP, PORT, this);
@@ -89,16 +86,6 @@ public class Sync extends AppCompatActivity {
             displayToast("Not connected");
         }
 
-        PeerListUIThread peerListUIThread = new PeerListUIThread(this);
-        new Thread(peerListUIThread).start();
-
-//        final UpdatePeerListViewThread updateView = new UpdatePeerListViewThread(this);
-//        final Discoverer.BroadcastThread broadcastThread = discoverer.new BroadcastThread(BROADCAST_IP, PORT);
-//        final ListenThread listenThread = new ListenThread();
-//        final Thread[] thread = new Thread[3];
-
-//        thread[1] = new Thread(listenThread);
-
         /**
          * Start broadcasting if device is not already broadcasting
          * Start listening for broadcasts if not already listening
@@ -109,6 +96,7 @@ public class Sync extends AppCompatActivity {
                 discoverer.startDiscoverer();
                 fileManager.startFileManager();
                 controller.startController();
+                startPeerListUIThread();
             }
         });
         stopSync.setOnClickListener(new View.OnClickListener() {
@@ -117,6 +105,7 @@ public class Sync extends AppCompatActivity {
                 discoverer.stopDiscoverer();
                 fileManager.stopFileManager();
                 controller.stopController();
+                stopPeerListUIThread();
             }
         });
     }
@@ -140,6 +129,19 @@ public class Sync extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         webServer.stop();
+    }
+
+    void startPeerListUIThread() {
+        if(!peerListUIThread.isRunning) {
+            Thread updatePeerListView = new Thread(peerListUIThread);
+            updatePeerListView.start();
+        }
+    }
+
+    void stopPeerListUIThread(){
+        if(peerListUIThread.isRunning) {
+            peerListUIThread.stop();
+        }
     }
 
     public class PeerListUIThread implements Runnable {
@@ -186,5 +188,3 @@ public class Sync extends AppCompatActivity {
         }
     }
 }
-
-
