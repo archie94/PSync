@@ -8,6 +8,7 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 
+import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -24,8 +25,9 @@ public class Controller {
     FileManager fileManager;
     FileTransporter fileTransporter;
     int syncInterval;
-    ControllerThread controllerThread;
-    Thread mcontrollerThread;
+    ControllerThread controllerThread = new ControllerThread(this);
+    Thread mcontrollerThread = new Thread(controllerThread);
+    int maxRunningDownloads;
 
     ConcurrentHashMap<String, ConcurrentHashMap<String, FileTable>> remotePeerFileTableHashMap;
     ConcurrentHashMap<String, ConcurrentHashMap<String, FileTable>> missingFileTableHashMap;
@@ -43,11 +45,12 @@ public class Controller {
     --------------------------------------------
      */
 
-    public Controller(Discoverer discoverer, FileManager fileManager, FileTransporter fileTransporter, int syncInterval) {
+    public Controller(Discoverer discoverer, FileManager fileManager, FileTransporter fileTransporter, int syncInterval, int maxRunningDownloads) {
         this.discoverer = discoverer;
         this.fileManager = fileManager;
         this.syncInterval = syncInterval;
         this.fileTransporter = fileTransporter;
+        this.maxRunningDownloads = maxRunningDownloads;
         remotePeerFileTableHashMap = new ConcurrentHashMap<>();
         missingFileTableHashMap = new ConcurrentHashMap<>();
         controllerThread = new ControllerThread(this);
@@ -96,6 +99,7 @@ public class Controller {
      * Find the missing / incomplete files from peers
      */
     void findMissingFiles() {
+        long endByte;
         /*
         Iterate over all peers
          */
@@ -107,6 +111,7 @@ public class Controller {
                 /*
                 Find whether the peer has any file which is missing in device
                  */
+                endByte = 0;
                 boolean isMissing = false;
                 for( String myFiles : fileManager.fileTableHashMap.keySet()) {
                     if(files.equals(myFiles) == true) { // check whether file is same as remote file
@@ -117,10 +122,12 @@ public class Controller {
                         } else if(fileManager.fileTableHashMap.get(myFiles).getSequence().get(1) <
                                 remotePeerFileTableHashMap.get(peers).get(files).getSequence().get(1)){
                             isMissing = true;
+                            endByte = fileManager.fileTableHashMap.get(myFiles).getSequence().get(1);
                             break;
                         }
                     }else {
                         isMissing = true;
+                        endByte = 0;
                     }
                 }
                 if(isMissing) { // file is missing
@@ -130,6 +137,10 @@ public class Controller {
                     }else {                                         // there are one or more missing file with current peer
                         missingFileTableHashMap.get(peers).put(files, remotePeerFileTableHashMap.get(peers).get(files));
                     }
+                    List<Long> seq = new ArrayList<Long>();
+                    seq.add(0, new Long(0));
+                    seq.add(0, endByte);
+                    missingFileTableHashMap.get(peers).get(files).setSequence(seq);
                 }
             }
         }
@@ -157,26 +168,46 @@ public class Controller {
         }
     }
 
-    void downloadMissingFiles() throws MalformedURLException {
-        /*
-        Check for missing files
-        Start download of missing file
-         */
-        for( String peer : missingFileTableHashMap.keySet()) {
-            if( ongoingDownloads.get(peer) == null) { // no downloads for the current peer
-                ongoingDownloads.put(peer, new ConcurrentHashMap<String, Thread>());
+
+    /*
+     * Remove completed downloads from fileTransporter ngoingDownloadThreads list
+     */
+    void manageOngoingDownloads(){
+        for(Thread t : fileTransporter.ongoingDownloadThreads.keySet()){
+            FileTransporter.ResumeDownloadThread downloadRunnable = fileTransporter.ongoingDownloadThreads.get(t);
+            if(downloadRunnable.isRunning){
+                fileManager.setEndSequence(downloadRunnable.fileID, downloadRunnable.getPresentByte());
             }
-            for( String fileID : missingFileTableHashMap.get(peer).keySet()) {
-                if( ongoingDownloads.get(peer).get(fileID) == null) { // current file download has to be started
-                    ongoingDownloads.get(peer).put(fileID, new Thread(fileTransporter.new ResumeDownloadThread(
-                            new URL("http://"+peer+":8080/" + missingFileTableHashMap.get(peer).get(fileID).getFileName()),
-                            null,
-                            0,
-                            0
-                    )));
-                }else { // current file is already downloaded or being downloaded
-                    if( ongoingDownloads.get(peer).get(fileID).isAlive() == false) { // download has finished
-                        ongoingDownloads.get(peer).remove(fileID);
+            else {
+                fileManager.setEndSequence(downloadRunnable.fileID, downloadRunnable.getPresentByte());
+                fileTransporter.ongoingDownloadThreads.remove(t);
+            }
+        }
+    }
+
+    void startDownloadingMissingFiles(){
+        if(fileTransporter.ongoingDownloadThreads.size() < maxRunningDownloads){
+            for(String p : missingFileTableHashMap.keySet()){
+                if(fileTransporter.ongoingDownloadThreads.size() < maxRunningDownloads){
+                    break;
+                }
+                for(String fileID : missingFileTableHashMap.get(p).keySet()){
+                    if(fileTransporter.ongoingDownloadThreads.size() < maxRunningDownloads){
+                        break;
+                    }
+                    boolean ongoing = false;
+                    for(Thread t : fileTransporter.ongoingDownloadThreads.keySet()){
+                        if(fileTransporter.ongoingDownloadThreads.get(t).fileID.equals(fileID)){
+                            ongoing = true;
+                            break;
+                        }
+                    }
+                    if(!ongoing){
+                        try {
+                            fileTransporter.downloadFile(fileID, missingFileTableHashMap.get(p).get(fileID).getFileName(),p, missingFileTableHashMap.get(p).get(fileID).getSequence().get(1), -1);
+                        } catch (MalformedURLException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
@@ -220,6 +251,8 @@ public class Controller {
                 findMissingFiles();
                 Gson gson = new Gson();
                 Log.d("DEBUG: ", "Controller thread missing files : " + gson.toJson(missingFileTableHashMap).toString());
+                manageOngoingDownloads();
+                startDownloadingMissingFiles();
 
                 try {
                     Thread.sleep(syncInterval * 1000);

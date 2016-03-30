@@ -122,6 +122,23 @@ public class FileManager {
         Log.d("DEBUG", "FileManager Add to DB: " + fileName);
     }
 
+    public void setEndSequence(String fileID, long endByte){
+        FileTable fileTable = fileTableHashMap.get(fileID);
+        if(fileTable != null){
+            List<Long> prevSeq = fileTable.getSequence();
+            List<Long> newSeq = new ArrayList<Long>();
+            newSeq.add(0, prevSeq.get(0));
+            if(endByte > prevSeq.get(1)) {
+                newSeq.add(1, endByte);
+            }
+            else {
+                newSeq.add(1, prevSeq.get(1));
+            }
+
+            fileTable.setSequence(newSeq);
+        }
+    }
+
     /**
      * Serialize data
      */
@@ -196,8 +213,6 @@ public class FileManager {
 
             }
         }
-
-        // add , remove or update database
     }
 
     /**
