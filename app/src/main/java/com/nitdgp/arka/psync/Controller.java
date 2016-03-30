@@ -88,7 +88,7 @@ public class Controller {
      */
     void peerFilesFetched(String peerAddress, ConcurrentHashMap<String, FileTable> remoteFiles) {
         Gson gson = new Gson();
-        Log.d("DEBUG:Controller file fetch", "Response code : " + gson.toJson(remoteFiles).toString());
+        Log.d("DEBUG: ", "Controller file fetch Response code : " + gson.toJson(remoteFiles).toString());
         remotePeerFileTableHashMap.put(peerAddress, remoteFiles);
     }
 
@@ -200,7 +200,7 @@ public class Controller {
         public void run() {
             exit = false;
             isRunning = true;
-            Log.d("DEBUG:Controller thread ", "running : " );
+            Log.d("DEBUG: ", "Controller thread running : " );
             while (!exit) {
 
                 for(String s : discoverer.peerList.keySet()) {
@@ -219,7 +219,7 @@ public class Controller {
                 removeExpiredRemoteFiles();
                 findMissingFiles();
                 Gson gson = new Gson();
-                Log.d("DEBUG:Controller thread ", "missing files : " + gson.toJson(missingFileTableHashMap).toString());
+                Log.d("DEBUG: ", "Controller thread missing files : " + gson.toJson(missingFileTableHashMap).toString());
 
                 try {
                     Thread.sleep(syncInterval * 1000);
