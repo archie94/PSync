@@ -106,10 +106,10 @@ public class Controller {
                     }
                 }
                 if(isMissing) { // file is missing
-                    if(missingFileTableHashMap.get(peers) == null) {
+                    if(missingFileTableHashMap.get(peers) == null) { // this is first missing file from current peer
                         missingFileTableHashMap.put(peers, new ConcurrentHashMap<String, FileTable>());
                         missingFileTableHashMap.get(peers).put(files, remotePeerFileTableHashMap.get(peers).get(files));
-                    }else {
+                    }else {                                         // there are one or more missing file with current peer
                         missingFileTableHashMap.get(peers).put(files, remotePeerFileTableHashMap.get(peers).get(files));
                     }
                 }
@@ -128,6 +128,9 @@ public class Controller {
         }
     }
 
+    /**
+     * Remove the peer which has expired
+     */
     void removeExpiredRemoteFiles() {
         for(String peer : remotePeerFileTableHashMap.keySet()) {
             if( discoverer.peerList.get(peer) == null) { // the peer has expired
@@ -138,6 +141,7 @@ public class Controller {
 
     /**
      * Thread to fetch the file list from all the available peers
+     * Find the missing files from the peers
      */
     public class ControllerThread implements Runnable {
         boolean exit = true;
@@ -163,6 +167,10 @@ public class Controller {
                     }
                 }
 
+                /*
+                Remove the peers which have expired and the missing files corresponding to them
+                Then find the missing files from the available peers
+                 */
                 removeExpiredMissingFiles();
                 removeExpiredRemoteFiles();
                 findMissingFiles();
