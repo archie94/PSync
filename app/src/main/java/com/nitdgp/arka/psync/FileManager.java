@@ -127,11 +127,6 @@ public class FileManager {
      */
     private void writeDB() {
         try{
-            /*List <FileTable> fileList = new ArrayList<FileTable>();
-            for(String s : fileTableHashMap.keySet()) {
-                fileList.add(fileTableHashMap.get(s));
-            }*/
-
             FileOutputStream fileOutputStream = new FileOutputStream(DATABASE_PATH);
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
             objectOutputStream.writeObject(fileTableHashMap);
@@ -150,7 +145,6 @@ public class FileManager {
      */
     private void readDB() {
         Log.d("DEBUG", "FileManager reading from fileDB");
-        //List <FileTable> fileList = null;
         try{
             FileInputStream fileInputStream = new FileInputStream(DATABASE_PATH);
             ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
@@ -166,7 +160,6 @@ public class FileManager {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-
     }
 
     /**
@@ -240,8 +233,6 @@ public class FileManager {
         }
 
         return hexString.toString();
-
-
     }
 
 

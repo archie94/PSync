@@ -10,6 +10,8 @@ import com.google.gson.Gson;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -22,11 +24,24 @@ public class Controller {
     FileManager fileManager;
     FileTransporter fileTransporter;
     int syncInterval;
-    ControllerThread controllerThread = new ControllerThread(this);
-    Thread mcontrollerThread = new Thread(controllerThread);
+    ControllerThread controllerThread;
+    Thread mcontrollerThread;
 
     ConcurrentHashMap<String, ConcurrentHashMap<String, FileTable>> remotePeerFileTableHashMap;
     ConcurrentHashMap<String, ConcurrentHashMap<String, FileTable>> missingFileTableHashMap;
+    /*
+    missingFileTableHashMap Format :
+    ----------------------------------------------------
+    | Peer Address | File ID | File Table for the file |
+    ----------------------------------------------------
+     */
+    ConcurrentHashMap<String, ConcurrentHashMap<String, Thread>> ongoingDownloads;
+    /*
+    ongoingDownloads Format :
+    --------------------------------------------
+    | Peer Address | File ID | Download Thread |
+    --------------------------------------------
+     */
 
     public Controller(Discoverer discoverer, FileManager fileManager, FileTransporter fileTransporter, int syncInterval) {
         this.discoverer = discoverer;
@@ -35,6 +50,9 @@ public class Controller {
         this.fileTransporter = fileTransporter;
         remotePeerFileTableHashMap = new ConcurrentHashMap<>();
         missingFileTableHashMap = new ConcurrentHashMap<>();
+        controllerThread = new ControllerThread(this);
+        mcontrollerThread  = new Thread(controllerThread);
+        ongoingDownloads = new ConcurrentHashMap<>();
     }
 
 
@@ -135,6 +153,32 @@ public class Controller {
         for(String peer : remotePeerFileTableHashMap.keySet()) {
             if( discoverer.peerList.get(peer) == null) { // the peer has expired
                 remotePeerFileTableHashMap.remove(peer);
+            }
+        }
+    }
+
+    void downloadMissingFiles() throws MalformedURLException {
+        /*
+        Check for missing files
+        Start download of missing file
+         */
+        for( String peer : missingFileTableHashMap.keySet()) {
+            if( ongoingDownloads.get(peer) == null) { // no downloads for the current peer
+                ongoingDownloads.put(peer, new ConcurrentHashMap<String, Thread>());
+            }
+            for( String fileID : missingFileTableHashMap.get(peer).keySet()) {
+                if( ongoingDownloads.get(peer).get(fileID) == null) { // current file download has to be started
+                    ongoingDownloads.get(peer).put(fileID, new Thread(fileTransporter.new ResumeDownloadThread(
+                            new URL("http://"+peer+":8080/" + missingFileTableHashMap.get(peer).get(fileID).getFileName()),
+                            null,
+                            0,
+                            0
+                    )));
+                }else { // current file is already downloaded or being downloaded
+                    if( ongoingDownloads.get(peer).get(fileID).isAlive() == false) { // download has finished
+                        ongoingDownloads.get(peer).remove(fileID);
+                    }
+                }
             }
         }
     }

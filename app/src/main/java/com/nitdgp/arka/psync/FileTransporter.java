@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * The File Transporter module : request a file from a peer node
  */
 public class FileTransporter {
-    List<Thread> ongoingDownloadThreads = new ArrayList<Thread>();
+    //List<Thread> ongoingDownloadThreads = new ArrayList<Thread>();
     String syncDirectory;
 
     public FileTransporter(String syncDirectory){
@@ -37,7 +37,7 @@ public class FileTransporter {
         ResumeDownloadThread resumeDownloadThread = new ResumeDownloadThread(fileUrl , f, 0, 0);
         Thread t = new Thread(resumeDownloadThread);
         t.start();
-        ongoingDownloadThreads.add(t);
+        //ongoingDownloadThreads.add(t);
     }
 
 
@@ -51,11 +51,14 @@ public class FileTransporter {
         boolean DOWNLOADING = true;
         boolean mState = true;
 
+        boolean isRunning;
+
         public ResumeDownloadThread(URL url, File outputFile, long startByte, long endByte){
             this.url = url;
             this.outputFile = outputFile;
             this.startByte = startByte;
             this.endByte = endByte;
+            this.isRunning = false;
         }
 
         @Override
@@ -65,6 +68,7 @@ public class FileTransporter {
 
             try {
                 String byteRange;
+                isRunning = true;
                 // open Http connection to URL
                 HttpURLConnection connection = (HttpURLConnection)url.openConnection();
                 Log.d("DEBUG:FILE TRANSPORTER", "URl is" + url);
@@ -121,6 +125,7 @@ public class FileTransporter {
                 e.printStackTrace();
                 Log.d("DEBUG:FILE TRANSPORTER", "Connection not established" + e);
             } finally {
+                isRunning = false;
                 if (raf != null) {
                     try {
                         raf.close();
