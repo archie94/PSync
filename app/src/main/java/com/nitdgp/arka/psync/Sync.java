@@ -32,6 +32,7 @@ public class Sync extends AppCompatActivity {
     private static final String BROADCAST_IP = "192.168.43.255";
     private static final int PORT = 4446;
     private static final int syncInterval = 5;
+    private static final int maxRunningDownloads = 5;
 
     private static String syncDirectory = "/www/sync/";
     private static String databaseDirectory = "/www/database/";
@@ -43,7 +44,7 @@ public class Sync extends AppCompatActivity {
     Discoverer discoverer = new Discoverer(BROADCAST_IP, PORT, this);
     FileManager fileManager = new FileManager(databaseName, databaseDirectory, syncDirectory);
     FileTransporter fileTransporter = new FileTransporter(syncDirectory);
-    Controller controller = new Controller(discoverer, fileManager, fileTransporter, syncInterval);
+    Controller controller = new Controller(discoverer, fileManager, fileTransporter, syncInterval, maxRunningDownloads);
     /* Methods */
     public void displayToast(String msg){
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();

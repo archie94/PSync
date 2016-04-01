@@ -23,7 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * The File Transporter module : request a file from a peer node
  */
 public class FileTransporter {
-    //List<Thread> ongoingDownloadThreads = new ArrayList<Thread>();
+
+    public ConcurrentHashMap<Thread, ResumeDownloadThread> ongoingDownloadThreads = new ConcurrentHashMap<Thread, ResumeDownloadThread>();
+
     String syncDirectory;
 
     public FileTransporter(String syncDirectory){
@@ -31,13 +33,13 @@ public class FileTransporter {
     }
 
 
-    public void downloadFile(String fileID, String fileName, String peerIP) throws MalformedURLException {
+    public void downloadFile(String fileID, String fileName, String peerIP, long startByte, long endByte) throws MalformedURLException {
         File f = new File(Environment.getExternalStorageDirectory() + syncDirectory + "/" + fileName);
-        URL fileUrl = new URL("http://"+ peerIP +":8000/getFile/" + fileID);
-        ResumeDownloadThread resumeDownloadThread = new ResumeDownloadThread(fileUrl , f, 0, 0);
+        URL fileUrl = new URL("http://"+ peerIP +":8080/getFile/" + fileID);
+        ResumeDownloadThread resumeDownloadThread = new ResumeDownloadThread(fileUrl , fileID, f, startByte, endByte);
         Thread t = new Thread(resumeDownloadThread);
+        ongoingDownloadThreads.put(t, resumeDownloadThread);
         t.start();
-        //ongoingDownloadThreads.add(t);
     }
 
 
@@ -47,22 +49,27 @@ public class FileTransporter {
         long startByte, endByte;
         final int BUFFER_SIZE = 10240;
 
+        String fileID;
         boolean mIsFinished = false;
         boolean DOWNLOADING = true;
         boolean mState = true;
+        long presentByte;
+        public boolean isRunning = false;
 
-        boolean isRunning;
-
-        public ResumeDownloadThread(URL url, File outputFile, long startByte, long endByte){
+        public ResumeDownloadThread(URL url, String fileID, File outputFile, long startByte, long endByte){
             this.url = url;
             this.outputFile = outputFile;
             this.startByte = startByte;
             this.endByte = endByte;
             this.isRunning = false;
+            this.presentByte = startByte;
+            this.fileID = fileID;
+
         }
 
         @Override
         public void run() {
+            this.isRunning = true;
             BufferedInputStream in = null;
             RandomAccessFile raf = null;
 
@@ -79,6 +86,9 @@ public class FileTransporter {
                     byteRange = startByte + "-" /*+ endByte*/;
                 }
                 else {
+                    if(endByte < startByte){
+                        throw new IllegalArgumentException();
+                    }
                     byteRange = startByte + "-" + endByte;
                 }
                 //conn.setRequestProperty("Range", "bytes=" + byteRange);
@@ -112,6 +122,7 @@ public class FileTransporter {
                 {
                     // write to buffer
                     raf.write(data,0,numBytesRead);
+                    this.presentByte = this.presentByte + BUFFER_SIZE;
                     // increase the startByte for resume later
                     startByte += numBytesRead;
                     // increase the downloaded size
@@ -137,7 +148,12 @@ public class FileTransporter {
                         in.close();
                     } catch (IOException e) {}
                 }
+                this.isRunning = false;
             }
+        }
+
+        public long getPresentByte(){
+            return this.presentByte;
         }
     }
 
