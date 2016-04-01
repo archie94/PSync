@@ -79,6 +79,12 @@ public class Controller {
             return fileManager.DATABASE_PATH;
         }
         else {
+            if(parameter.substring(0, 7).equals("getFile")){
+                String fileID = parameter.substring(8);
+                Log.d("DEBUG", "Controller URL Request recv: FILEID: " + fileID);
+                return fileManager.FILES_PATH + "/" + fileManager.fileTableHashMap.get(fileID).getFileName();
+            }
+
             return "";
         }
     }
@@ -186,13 +192,15 @@ public class Controller {
     }
 
     void startDownloadingMissingFiles(){
+        Log.d("DEBUG: ", "Controller: START DOWNLOADING MISSING FILES" );
         if(fileTransporter.ongoingDownloadThreads.size() < maxRunningDownloads){
+            Log.d("DEBUG: ", "Controller: here1" );
             for(String p : missingFileTableHashMap.keySet()){
-                if(fileTransporter.ongoingDownloadThreads.size() < maxRunningDownloads){
+                if(fileTransporter.ongoingDownloadThreads.size() >= maxRunningDownloads){
                     break;
                 }
                 for(String fileID : missingFileTableHashMap.get(p).keySet()){
-                    if(fileTransporter.ongoingDownloadThreads.size() < maxRunningDownloads){
+                    if(fileTransporter.ongoingDownloadThreads.size() >= maxRunningDownloads){
                         break;
                     }
                     boolean ongoing = false;
@@ -204,6 +212,7 @@ public class Controller {
                     }
                     if(!ongoing){
                         try {
+                            Log.d("DEBUG: ", "Controller: here2" );
                             fileTransporter.downloadFile(fileID, missingFileTableHashMap.get(p).get(fileID).getFileName(),p, missingFileTableHashMap.get(p).get(fileID).getSequence().get(1), -1);
                         } catch (MalformedURLException e) {
                             e.printStackTrace();

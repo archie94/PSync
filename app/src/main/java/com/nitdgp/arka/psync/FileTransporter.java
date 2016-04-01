@@ -35,7 +35,7 @@ public class FileTransporter {
 
     public void downloadFile(String fileID, String fileName, String peerIP, long startByte, long endByte) throws MalformedURLException {
         File f = new File(Environment.getExternalStorageDirectory() + syncDirectory + "/" + fileName);
-        URL fileUrl = new URL("http://"+ peerIP +":8000/getFile/" + fileID);
+        URL fileUrl = new URL("http://"+ peerIP +":8080/getFile/" + fileID);
         ResumeDownloadThread resumeDownloadThread = new ResumeDownloadThread(fileUrl , fileID, f, startByte, endByte);
         Thread t = new Thread(resumeDownloadThread);
         ongoingDownloadThreads.put(t, resumeDownloadThread);
