@@ -127,7 +127,7 @@ public class FileTransporter {
                     // increase the startByte for resume later
                     startByte += numBytesRead;
                     // increase the downloaded size
-                    Log.d("DEBUG:FILE TRANSPORTER", "Fetching  data " + startByte);
+                    //Log.d("DEBUG:FILE TRANSPORTER", "Fetching  data " + startByte);
                 }
 
                 if (mState == DOWNLOADING) {

@@ -37,13 +37,6 @@ public class Controller {
     | Peer Address | File ID | File Table for the file |
     ----------------------------------------------------
      */
-    ConcurrentHashMap<String, ConcurrentHashMap<String, Thread>> ongoingDownloads;
-    /*
-    ongoingDownloads Format :
-    --------------------------------------------
-    | Peer Address | File ID | Download Thread |
-    --------------------------------------------
-     */
 
     public Controller(Discoverer discoverer, FileManager fileManager, FileTransporter fileTransporter, int syncInterval, int maxRunningDownloads) {
         this.discoverer = discoverer;
@@ -55,7 +48,6 @@ public class Controller {
         missingFileTableHashMap = new ConcurrentHashMap<>();
         controllerThread = new ControllerThread(this);
         mcontrollerThread  = new Thread(controllerThread);
-        ongoingDownloads = new ConcurrentHashMap<>();
     }
 
 
@@ -126,23 +118,28 @@ public class Controller {
                 for(String myFiles : fileManager.fileTableHashMap.keySet()) {
                     if(files.equals(myFiles) == true) { // check whether file is same as remote file
                         Log.d("DEBUG: ", "MISSING FILE END BYTE : " + fileManager.fileTableHashMap.get(myFiles).getSequence().get(1));
-                        Log.d("DEBUG: ", "MISSING FILE SIZE " + fileManager.fileTableHashMap.get(myFiles).getFileSize());
+                        //Log.d("DEBUG: ", "MISSING FILE SIZE " + fileManager.fileTableHashMap.get(myFiles).getFileSize());
                         if (fileManager.fileTableHashMap.get(myFiles).getSequence().get(1) ==
                                 fileManager.fileTableHashMap.get(myFiles).getFileSize()) { // complete file available
                             isMissing = false;
                             Log.d("DEBUG: ", "MISSING FILE COMPLETE");
                             break;
-                        } else if (fileManager.fileTableHashMap.get(myFiles).getSequence().get(1) <
+                        }else {
+                            if (fileManager.fileTableHashMap.get(myFiles).getSequence().get(1) <
                                 remotePeerFileTableHashMap.get(peers).get(files).getSequence().get(1)) {
                             isMissing = true;
                             Log.d("DEBUG: ", "MISSING FILE INCOMPLETE");
                             endByte = fileManager.fileTableHashMap.get(myFiles).getSequence().get(1);
                             break;
+                            } else {
+                                isMissing = false;
+                                break;
+                            }
                         }
                     }
                 }
                 if(isMissing) { // file is missing
-                    Log.d("DEBUG: ", "MISSING FILE TRUE");
+                    //Log.d("DEBUG: ", "MISSING FILE TRUE");
                     if(missingFileTableHashMap.get(peers) == null) { // this is first missing file from current peer
                         missingFileTableHashMap.put(peers, new ConcurrentHashMap<String, FileTable>());
                     }
@@ -170,9 +167,9 @@ public class Controller {
             for(String peer : remotePeerFileTableHashMap.keySet()) {
                     if(discoverer.peerList.get(peer) == null) { // the peer has expired
                             remotePeerFileTableHashMap.remove(peer);
-                        }
-                }
-        }
+                    }
+            }
+    }
 
 
 
@@ -182,7 +179,7 @@ public class Controller {
     void manageOngoingDownloads(){
         for(Thread t : fileTransporter.ongoingDownloadThreads.keySet()){
             FileTransporter.ResumeDownloadThread downloadRunnable = fileTransporter.ongoingDownloadThreads.get(t);
-            Log.d("DEBUG: ", "Controller: PROGRESS " + downloadRunnable.getPresentByte());
+            //Log.d("DEBUG: ", "Controller: PROGRESS " + downloadRunnable.getPresentByte());
             if(downloadRunnable.isRunning){
                 fileManager.setEndSequence(downloadRunnable.fileID, downloadRunnable.getPresentByte());
             }
@@ -195,7 +192,7 @@ public class Controller {
 
     void startDownloadingMissingFiles(){
         if(fileTransporter.ongoingDownloadThreads.size() < maxRunningDownloads){
-            Log.d("DEBUG: ", "Controller: here1" );
+            //Log.d("DEBUG: ", "Controller: here1" );
             for(String p : missingFileTableHashMap.keySet()){
                 if(fileTransporter.ongoingDownloadThreads.size() >= maxRunningDownloads){
                     break;
@@ -207,7 +204,7 @@ public class Controller {
                     boolean ongoing = false;
                     for(Thread t : fileTransporter.ongoingDownloadThreads.keySet()){
                         Log.d("DEBUG: ", "MISSING FILE ONGOING CHECK" + fileID);
-                        Log.d("DEBUG: ", "MISSING FILE ONGOING" + fileTransporter.ongoingDownloadThreads.get(t).fileID );
+                        //Log.d("DEBUG: ", "MISSING FILE ONGOING" + fileTransporter.ongoingDownloadThreads.get(t).fileID );
                         if(fileTransporter.ongoingDownloadThreads.get(t).fileID.equals(fileID)){
                             ongoing = true;
                             break;
@@ -264,7 +261,6 @@ public class Controller {
                 findMissingFiles();
                 Gson gson = new Gson();
                 Log.d("DEBUG: ", "Controller thread missing files : " + gson.toJson(missingFileTableHashMap).toString());
-                manageOngoingDownloads();
                 startDownloadingMissingFiles();
 
                 try {
