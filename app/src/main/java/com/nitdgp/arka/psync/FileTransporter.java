@@ -39,6 +39,7 @@ public class FileTransporter {
         ResumeDownloadThread resumeDownloadThread = new ResumeDownloadThread(fileUrl , fileID, f, startByte, endByte);
         Thread t = new Thread(resumeDownloadThread);
         ongoingDownloadThreads.put(t, resumeDownloadThread);
+        Log.d("DEBUG:", "MISSING FILES ONGOING" + ongoingDownloadThreads.keySet());
         t.start();
     }
 
@@ -122,7 +123,7 @@ public class FileTransporter {
                 {
                     // write to buffer
                     raf.write(data,0,numBytesRead);
-                    this.presentByte = this.presentByte + BUFFER_SIZE;
+                    this.presentByte = this.presentByte + numBytesRead;
                     // increase the startByte for resume later
                     startByte += numBytesRead;
                     // increase the downloaded size

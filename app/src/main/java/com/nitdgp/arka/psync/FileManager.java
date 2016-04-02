@@ -136,6 +136,7 @@ public class FileManager {
             }
 
             fileTable.setSequence(newSeq);
+            Log.d("DEBUG", "FileManager SET_END_SEQ: " + newSeq);
         }
     }
 
