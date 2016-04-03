@@ -140,6 +140,19 @@ public class FileManager {
         }
     }
 
+    public void forceSetEndSequence(String fileID, long endByte){
+        FileTable fileTable = fileTableHashMap.get(fileID);
+        if(fileTable != null){
+            List<Long> newSeq = new ArrayList<Long>();
+            newSeq.add(0, (long)0); // check this
+
+            newSeq.add(1, endByte);
+
+            fileTable.setSequence(newSeq);
+            Log.d("DEBUG", "FileManager SET_END_SEQ: " + newSeq);
+        }
+    }
+
     /**
      * Serialize data
      */

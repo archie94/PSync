@@ -39,7 +39,7 @@ public class FileTransporter {
         ResumeDownloadThread resumeDownloadThread = new ResumeDownloadThread(fileUrl , fileID, f, startByte, endByte);
         Thread t = new Thread(resumeDownloadThread);
         ongoingDownloadThreads.put(t, resumeDownloadThread);
-        Log.d("DEBUG:", "MISSING FILES ONGOING" + ongoingDownloadThreads.keySet());
+        Log.d("DEBUG:", "MISSING FILE DOWNLOAD START START BYTE = " + startByte + " END BYTE = " + endByte);
         t.start();
     }
 

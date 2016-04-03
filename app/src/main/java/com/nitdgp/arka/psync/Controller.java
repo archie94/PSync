@@ -118,7 +118,8 @@ public class Controller {
                 for(String myFiles : fileManager.fileTableHashMap.keySet()) {
                     if(files.equals(myFiles) == true) { // check whether file is same as remote file
                         Log.d("DEBUG: ", "MISSING FILE END BYTE : " + fileManager.fileTableHashMap.get(myFiles).getSequence().get(1));
-                        //Log.d("DEBUG: ", "MISSING FILE SIZE " + fileManager.fileTableHashMap.get(myFiles).getFileSize());
+                        Log.d("DEBUG: ", "MISSING FILE SIZE " + fileManager.fileTableHashMap.get(myFiles).getFileSize());
+
                         if (fileManager.fileTableHashMap.get(myFiles).getSequence().get(1) ==
                                 fileManager.fileTableHashMap.get(myFiles).getFileSize()) { // complete file available
                             isMissing = false;
@@ -144,6 +145,7 @@ public class Controller {
                         missingFileTableHashMap.put(peers, new ConcurrentHashMap<String, FileTable>());
                     }
                     missingFileTableHashMap.get(peers).put(files, remotePeerFileTableHashMap.get(peers).get(files));
+                    // missing file sequence same as sequence of available file
                     List<Long> seq = new ArrayList<>();
                     seq.add((long) 0);
                     seq.add(endByte);
@@ -152,7 +154,7 @@ public class Controller {
                     // Make file manager entry
                     if(fileManager.fileTableHashMap.get(files) == null){
                         fileManager.fileTableHashMap.put(files, missingFileTableHashMap.get(peers).get(files));
-                        fileManager.setEndSequence(files, endByte);
+                        fileManager.forceSetEndSequence(files, endByte);
                     }
 
                 }
@@ -174,7 +176,7 @@ public class Controller {
 
 
     /*
-     * Remove completed downloads from fileTransporter ngoingDownloadThreads list
+     * Remove completed downloads from fileTransporter ongoingDownloadThreads list
      */
     void manageOngoingDownloads(){
         for(Thread t : fileTransporter.ongoingDownloadThreads.keySet()){
@@ -261,6 +263,7 @@ public class Controller {
                 findMissingFiles();
                 Gson gson = new Gson();
                 Log.d("DEBUG: ", "Controller thread missing files : " + gson.toJson(missingFileTableHashMap).toString());
+                Log.d("DEBUG:", "MISSING FILES ONGOING THREAD COUNT" + fileTransporter.ongoingDownloadThreads.size());
                 startDownloadingMissingFiles();
 
                 try {
