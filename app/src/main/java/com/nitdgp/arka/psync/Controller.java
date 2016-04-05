@@ -194,7 +194,6 @@ public class Controller {
 
     void startDownloadingMissingFiles(){
         if(fileTransporter.ongoingDownloadThreads.size() < maxRunningDownloads){
-            //Log.d("DEBUG: ", "Controller: here1" );
             for(String p : missingFileTableHashMap.keySet()){
                 if(fileTransporter.ongoingDownloadThreads.size() >= maxRunningDownloads){
                     break;
@@ -246,6 +245,10 @@ public class Controller {
             Log.d("DEBUG: ", "Controller thread running : " );
             while (!exit) {
 
+                /*
+                For every peer available fetch file list from them
+                After that update remotePeerFileTableHashMap
+                 */
                 for(String s : discoverer.peerList.keySet()) {
                     try {
                         new Thread(fileTransporter.new ListFetcher(controller, new URL("http://"+s+":8080/list"), s)).start();

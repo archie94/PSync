@@ -27,6 +27,7 @@ public class Sync extends AppCompatActivity {
     Button stopListen;
     Button getFile;
     ListView peerListView;
+    ListView activeDownloadsListView;
 
 
     private static final String BROADCAST_IP = "192.168.43.255";
@@ -39,6 +40,7 @@ public class Sync extends AppCompatActivity {
     private static String databaseName = "fileDB.txt";
 
     PeerListUIThread peerListUIThread = new PeerListUIThread(this);
+    ActiveDownloadsListUIThread activeDownloadsListUIThread = new ActiveDownloadsListUIThread(this);
 
     private WebServer webServer;
     Discoverer discoverer = new Discoverer(BROADCAST_IP, PORT, this);
@@ -75,6 +77,7 @@ public class Sync extends AppCompatActivity {
         stopListen = (Button)findViewById(R.id.btn_stop_listener);
         getFile = (Button)findViewById(R.id.btn_get_file);
         peerListView = (ListView)findViewById(android.R.id.list);
+        activeDownloadsListView = (ListView)findViewById(R.id.listView);
 
         /*
          * Check if device is connected via wifi
@@ -98,6 +101,7 @@ public class Sync extends AppCompatActivity {
                 fileManager.startFileManager();
                 controller.startController();
                 startPeerListUIThread();
+                startActiveDownloadsListUIThread();
             }
         });
         stopSync.setOnClickListener(new View.OnClickListener() {
@@ -107,6 +111,7 @@ public class Sync extends AppCompatActivity {
                 fileManager.stopFileManager();
                 controller.stopController();
                 stopPeerListUIThread();
+                stopActiveDownloadsListUIThread();
             }
         });
     }
@@ -145,6 +150,22 @@ public class Sync extends AppCompatActivity {
         }
     }
 
+    void startActiveDownloadsListUIThread() {
+        if(!activeDownloadsListUIThread.isRunning) {
+            Thread updateActiveDownloadsList = new Thread(activeDownloadsListUIThread);
+            updateActiveDownloadsList.start();
+        }
+    }
+
+    void stopActiveDownloadsListUIThread() {
+        if(activeDownloadsListUIThread.isRunning) {
+            activeDownloadsListUIThread.stop();
+        }
+    }
+
+    /**
+     * A Thread to update the ListView showing list of peers
+     */
     public class PeerListUIThread implements Runnable {
         Context context;
         boolean exit;
@@ -171,6 +192,56 @@ public class Sync extends AppCompatActivity {
                         }
                         PeerListView peerListRow = new PeerListView(context, address, counter);
                         peerListView.setAdapter(peerListRow);
+                    }
+                });
+                // Update UI after every 1 second
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            exit = true;
+            isRunning = false;
+        }
+
+        public void stop() {
+            exit = true;
+        }
+    }
+
+    /**
+     * A Thread to update the ListView showing list of ongoing downloads
+     */
+    public class ActiveDownloadsListUIThread implements Runnable {
+        Context context;
+        boolean exit;
+        boolean isRunning;
+
+        public ActiveDownloadsListUIThread(Context context) {
+            this.context = context;
+            exit = false;
+        }
+
+        @Override
+        public void run() {
+            exit = false;
+            isRunning = true;
+            while (!exit) {
+                Sync.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        final List<String> fileNameList = new ArrayList<String>();
+                        final List<Long> downloadedSizeList = new ArrayList<Long>();
+                        final List<Long> fileSizeList = new ArrayList<Long>();
+                        for(Thread t : fileTransporter.ongoingDownloadThreads.keySet()) {
+                            fileNameList.add(fileTransporter.ongoingDownloadThreads.get(t).fileID);
+                            downloadedSizeList.add(fileTransporter.ongoingDownloadThreads.get(t).getPresentByte());
+                            fileSizeList.add((long)0);
+                        }
+                        ActiveDownloadsAdapter activeDownloadsAdapter = new ActiveDownloadsAdapter(context,
+                                fileNameList, downloadedSizeList, fileSizeList);
+                        activeDownloadsListView.setAdapter(activeDownloadsAdapter);
                     }
                 });
                 // Update UI after every 1 second
