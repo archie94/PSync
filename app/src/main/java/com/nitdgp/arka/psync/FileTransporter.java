@@ -92,7 +92,7 @@ public class FileTransporter {
                     }
                     byteRange = startByte + "-" + endByte;
                 }
-                //conn.setRequestProperty("Range", "bytes=" + byteRange);
+                connection.setRequestProperty("Range", "bytes=" + byteRange);
                 connection.setRequestMethod("GET");
                 connection.setConnectTimeout( 5*1000);
                 connection.setReadTimeout(5*1000);
