@@ -3,6 +3,7 @@ package com.nitdgp.arka.psync;
  * Created by bishakh on 3/26/16.
  */
 import android.content.Context;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -114,6 +115,21 @@ public class Sync extends AppCompatActivity {
                 stopActiveDownloadsListUIThread();
             }
         });
+
+
+        listen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startService(new Intent(getBaseContext(), SyncService.class));
+            }
+        });
+
+        stopListen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stopService(new Intent(getBaseContext(), SyncService.class));
+            }
+        });
     }
 
     @Override
@@ -122,19 +138,19 @@ public class Sync extends AppCompatActivity {
         /*
         Start HTTP server
          */
-        webServer = new WebServer(8080, controller);
+        /*webServer = new WebServer(8080, controller);
         try {
             webServer.start();
         } catch(IOException ioe) {
             Log.w("Httpd", "The server could not start.");
         }
-        Log.w("Httpd", "Web server initialized.");
+        Log.w("Httpd", "Web server initialized.");*/
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        webServer.stop();
+        //webServer.stop();
     }
 
     void startPeerListUIThread() {
