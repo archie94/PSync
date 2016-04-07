@@ -138,9 +138,14 @@ public class Discoverer {
                 this.isRunning = true;
                 while(!this.exit) {
                     datagramPacket = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(BROADCAST_IP), PORT);
-                    datagramSocket.send(datagramPacket);
-
-                    Log.d("DEBUG", "Broadcast Packet Sent");
+                    try {
+                        datagramSocket.send(datagramPacket);
+                        Log.d("DEBUG", "Broadcast Packet Sent");
+                    }
+                    catch (Exception e){
+                        e.printStackTrace();
+                        Log.d("DEBUG", "Broadcast Packet Sending Failed");
+                    }
                     Thread.sleep(3000);
                 }
             } catch (SocketException e) {
