@@ -68,6 +68,15 @@ public class SyncService extends Service {
         return super.stopService(name);
     }
 
+    @Override
+    public void onDestroy() {
+        discoverer.stopDiscoverer();
+        fileManager.stopFileManager();
+        controller.stopController();
+        webServer.stop();
+        super.onDestroy();
+    }
+
     public class SyncServiceBinder extends Binder {
         SyncService getService() {
             // Return this instance of SyncService so activity can call public methods

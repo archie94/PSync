@@ -139,7 +139,9 @@ public class Sync extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 final Intent syncServiceIntent = new Intent(getBaseContext(), SyncService.class);
-                unbindService(syncServiceConnection);
+                if(syncServiceBound) {
+                    unbindService(syncServiceConnection);
+                }
                 syncServiceBound = false;
                 stopService(syncServiceIntent);
                 stopPeerListUIThread();
