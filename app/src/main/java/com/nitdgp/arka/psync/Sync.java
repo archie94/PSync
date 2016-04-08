@@ -157,7 +157,7 @@ public class Sync extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-    }
+e    }
 
     @Override
     protected void onDestroy(){

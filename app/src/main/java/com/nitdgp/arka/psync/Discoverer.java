@@ -243,6 +243,7 @@ public class Discoverer {
             this.exit = false;
             this.isRunning = false;
             multicastLock.release();
+            Log.d("DEBUG", "Listener Thread Stopped");
         }
 
         public void stop() {
