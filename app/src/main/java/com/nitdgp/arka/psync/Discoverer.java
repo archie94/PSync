@@ -70,8 +70,10 @@ public class Discoverer {
         */
         if (!listenThread.isRunning) {
             if (thread[1].isAlive()) {
+                Log.d("LISTENER", "REVIVING");
                 listenThread.revive();
             } else {
+                Log.d("LISTENER", "STARTING");
                 thread[1] = new Thread(listenThread);
                 thread[1].start();
             }
@@ -79,7 +81,9 @@ public class Discoverer {
     }
 
     public void stopListener() {
+        Log.d("LISTENER", "STOPPING");
         if (!listenThread.exit) {
+            Log.d("LISTENER", "STOPPING2");
             listenThread.stop();
         }
     }
@@ -223,7 +227,7 @@ public class Discoverer {
 
 
             } finally {
-                datagramSocket.close();
+                    datagramSocket.close();
             }
             this.exit = false;
             this.isRunning = false;

@@ -277,6 +277,7 @@ public class Controller {
             }
             exit = false;
             isRunning = false;
+            Log.d("DEBUG: ", "Controller thread stopped " );
         }
 
         public void stop() {

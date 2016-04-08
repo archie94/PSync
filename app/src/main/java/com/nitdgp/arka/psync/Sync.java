@@ -2,12 +2,15 @@ package com.nitdgp.arka.psync;
 /**
  * Created by bishakh on 3/26/16.
  */
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -39,6 +42,10 @@ public class Sync extends AppCompatActivity {
     private static String syncDirectory = "/www/sync/";
     private static String databaseDirectory = "/www/database/";
     private static String databaseName = "fileDB.txt";
+
+    SyncService syncService;
+    boolean syncServiceBound = false;
+
 
     PeerListUIThread peerListUIThread = new PeerListUIThread(this);
     ActiveDownloadsListUIThread activeDownloadsListUIThread = new ActiveDownloadsListUIThread(this);
@@ -91,6 +98,7 @@ public class Sync extends AppCompatActivity {
             displayToast("Not connected");
         }
 
+
         /**
          * Start broadcasting if device is not already broadcasting
          * Start listening for broadcasts if not already listening
@@ -120,14 +128,23 @@ public class Sync extends AppCompatActivity {
         listen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startService(new Intent(getBaseContext(), SyncService.class));
+                final Intent syncServiceIntent = new Intent(getBaseContext(), SyncService.class);
+                bindService(syncServiceIntent, syncServiceConnection, Context.BIND_AUTO_CREATE);
+                startService(syncServiceIntent);
+                startPeerListUIThread();
             }
         });
 
         stopListen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stopService(new Intent(getBaseContext(), SyncService.class));
+                final Intent syncServiceIntent = new Intent(getBaseContext(), SyncService.class);
+                if(syncServiceBound) {
+                    unbindService(syncServiceConnection);
+                }
+                syncServiceBound = false;
+                stopService(syncServiceIntent);
+                stopPeerListUIThread();
             }
         });
     }
@@ -135,16 +152,6 @@ public class Sync extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        /*
-        Start HTTP server
-         */
-        /*webServer = new WebServer(8080, controller);
-        try {
-            webServer.start();
-        } catch(IOException ioe) {
-            Log.w("Httpd", "The server could not start.");
-        }
-        Log.w("Httpd", "Web server initialized.");*/
     }
 
     @Override
@@ -152,6 +159,29 @@ public class Sync extends AppCompatActivity {
         super.onPause();
         //webServer.stop();
     }
+
+    @Override
+    protected void onDestroy(){
+        unbindService(syncServiceConnection);
+        super.onDestroy();
+    }
+
+    private ServiceConnection syncServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className,
+                                       IBinder service) {
+            SyncService.SyncServiceBinder binder = (SyncService.SyncServiceBinder) service;
+            syncService = binder.getService();
+            syncServiceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            syncServiceBound = false;
+        }
+    };
+
 
     void startPeerListUIThread() {
         if(!peerListUIThread.isRunning) {
@@ -202,9 +232,11 @@ public class Sync extends AppCompatActivity {
                     public void run() {
                         final List<String> address = new ArrayList<>();
                         final List<Integer> counter = new ArrayList<>();
-                        for (String s : discoverer.peerList.keySet()) {
-                            address.add(s);
-                            counter.add(discoverer.peerList.get(s));
+                        if(syncServiceBound) {
+                            for (String s : syncService.discoverer.peerList.keySet()) {
+                                address.add(s);
+                                counter.add(syncService.discoverer.peerList.get(s));
+                            }
                         }
                         PeerListView peerListRow = new PeerListView(context, address, counter);
                         peerListView.setAdapter(peerListRow);
