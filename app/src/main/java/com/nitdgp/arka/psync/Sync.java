@@ -157,7 +157,6 @@ public class Sync extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        //webServer.stop();
     }
 
     @Override

@@ -70,10 +70,8 @@ public class Discoverer {
         */
         if (!listenThread.isRunning) {
             if (thread[1].isAlive()) {
-                Log.d("LISTENER", "REVIVING");
                 listenThread.revive();
             } else {
-                Log.d("LISTENER", "STARTING");
                 thread[1] = new Thread(listenThread);
                 thread[1].start();
             }
@@ -81,9 +79,7 @@ public class Discoverer {
     }
 
     public void stopListener() {
-        Log.d("LISTENER", "STOPPING");
         if (!listenThread.exit) {
-            Log.d("LISTENER", "STOPPING2");
             listenThread.stop();
         }
     }
@@ -166,7 +162,7 @@ public class Discoverer {
             this.exit = false;
             this.isRunning = false;
 
-            Log.d("DEBUG", "Broadcasting Stopped");
+            Log.d("DEBUG", "Broadcast Thread Stopped");
         }
 
         public void stop() {
@@ -177,6 +173,7 @@ public class Discoverer {
 
     /**
      * Thread to listen for broadcasts
+     * While closing this thread we may reach a zombie state as the thread may be blocked on receive
      */
     public class ListenThread implements Runnable{
         DatagramPacket datagramPacket;
@@ -200,13 +197,24 @@ public class Discoverer {
             try{
                 datagramSocket = new DatagramSocket(PORT, InetAddress.getByName("0.0.0.0"));
                 datagramSocket.setBroadcast(true);
+                datagramSocket.setSoTimeout(200);
 
                 Log.d("DEBUG", "ListenerThread Start");
                 this.isRunning = true;
                 while(!this.exit) {
                     buffer = new byte[15000];
+
+                    boolean willUpdatePeer = false;     // will update peer list only if we receive a datagram packet
                     datagramPacket = new DatagramPacket(buffer, buffer.length);
-                    datagramSocket.receive(datagramPacket);
+                    try {
+                        datagramSocket.receive(datagramPacket);
+                        willUpdatePeer = true;          // datagram packet received will update peer list
+                    }catch (IOException e) {
+                        /*
+                        This exception will be caught when we do not receive a datagram packet
+                         */
+                    }
+
                     byte[] data = datagramPacket.getData();
                     InputStreamReader inputStreamReader = new InputStreamReader(new ByteArrayInputStream(data), Charset.forName("UTF-8"));
 
@@ -218,22 +226,23 @@ public class Discoverer {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    updatePeers(datagramPacket.getAddress().getHostAddress());
+                    if(willUpdatePeer) { // update peer list only when datagram packet is received
+                        updatePeers(datagramPacket.getAddress().getHostAddress());
+                    }
                 } // end of while
             }catch (UnknownHostException e){
-
-
             }catch (IOException e){
-
-
+                e.printStackTrace();
             } finally {
+                try {
                     datagramSocket.close();
+                }catch (NullPointerException e){
+
+                }
             }
             this.exit = false;
             this.isRunning = false;
             multicastLock.release();
-            Log.d("DEBUG", "ListenerThread Stop");
-
         }
 
         public void stop() {
@@ -295,6 +304,4 @@ public class Discoverer {
             exit = true;
         }
     }
-
-
 }
