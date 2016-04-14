@@ -6,12 +6,16 @@ import android.os.Environment;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.RandomAccessFile;
+import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -24,7 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FileTransporter {
 
+    Gson gson = new Gson();
+
     public ConcurrentHashMap<Thread, ResumeDownloadThread> ongoingDownloadThreads = new ConcurrentHashMap<Thread, ResumeDownloadThread>();
+    Type ConcurrentHashMapType = new TypeToken<ConcurrentHashMap<String, FileTable>>(){}.getType();
 
     String syncDirectory;
 
@@ -211,12 +218,10 @@ public class FileTransporter {
                 Log.d("DEBUG:FILE TRANSPORTER", "Response code : " + connection.getResponseCode());
                 // get the input stream
                 in = new BufferedInputStream(connection.getInputStream());
-                ObjectInputStream objectInputStream = new ObjectInputStream(in);
-
+                BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
                 ConcurrentHashMap fileTableHashMap;
-                fileTableHashMap = (ConcurrentHashMap<String, FileTable>) objectInputStream.readObject();
+                fileTableHashMap = (ConcurrentHashMap<String, FileTable>)gson.fromJson(br, ConcurrentHashMapType);
                 controller.peerFilesFetched(peerAddress, fileTableHashMap);
-                //Gson gson = new Gson();
                 //Log.d("DEBUG:FILE TRANSPORTER", "List Json: " + gson.toJson(fileTableHashMap).toString());
 
 
