@@ -13,13 +13,11 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,8 +37,8 @@ public class Sync extends AppCompatActivity {
     private static final int syncInterval = 5;
     private static final int maxRunningDownloads = 5;
 
-    private static String syncDirectory = "/www/sync/";
-    private static String databaseDirectory = "/www/database/";
+    private static String syncDirectory = "/DMS/sync/";
+    private static String databaseDirectory = "/DMS/Working/";
     private static String databaseName = "fileDB.txt";
 
     SyncService syncService;
@@ -157,7 +155,7 @@ public class Sync extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-e    }
+    }
 
     @Override
     protected void onDestroy(){

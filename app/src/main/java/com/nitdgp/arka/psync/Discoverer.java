@@ -190,10 +190,10 @@ public class Discoverer {
 
         @Override
         public void run() {
-            WifiManager wifiManager;
+            /*WifiManager wifiManager;
             wifiManager = (WifiManager)mContext.getSystemService(Context.WIFI_SERVICE);
             WifiManager.MulticastLock multicastLock = wifiManager.createMulticastLock("lock");
-            multicastLock.acquire();
+            multicastLock.acquire();*/
             try{
                 datagramSocket = new DatagramSocket(PORT, InetAddress.getByName("0.0.0.0"));
                 datagramSocket.setBroadcast(true);
@@ -216,18 +216,20 @@ public class Discoverer {
                     }
 
                     byte[] data = datagramPacket.getData();
-                    InputStreamReader inputStreamReader = new InputStreamReader(new ByteArrayInputStream(data), Charset.forName("UTF-8"));
+                    InputStreamReader inputStreamReader = new InputStreamReader(
+                            new ByteArrayInputStream(data), Charset.forName("UTF-8"));
 
-                    final StringBuilder stringBuilder = new StringBuilder();
+                    /*final StringBuilder stringBuilder = new StringBuilder();
                     try {
                         for (int value; (value = inputStreamReader.read()) != -1; ) {
                             stringBuilder.append((char) value);
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
-                    }
+                    }*/
                     if(willUpdatePeer) { // update peer list only when datagram packet is received
                         updatePeers(datagramPacket.getAddress().getHostAddress());
+                        Log.d("Listen Thread : ", "Message : " + new String(datagramPacket.getData(), 0, datagramPacket.getLength()));
                     }
                 } // end of while
             }catch (UnknownHostException e){
@@ -242,7 +244,7 @@ public class Discoverer {
             }
             this.exit = false;
             this.isRunning = false;
-            multicastLock.release();
+            //multicastLock.release();
             Log.d("DEBUG", "Listener Thread Stopped");
         }
 

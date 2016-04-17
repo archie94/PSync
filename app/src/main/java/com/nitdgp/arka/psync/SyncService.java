@@ -15,8 +15,8 @@ public class SyncService extends Service {
     private static final int syncInterval = 5;
     private static final int maxRunningDownloads = 5;
 
-    private static String syncDirectory = "/www/sync/";
-    private static String databaseDirectory = "/www/database/";
+    private static String syncDirectory = "/DMS/sync/";
+    private static String databaseDirectory = "/DMS/Working/";
     private static String databaseName = "fileDB.txt";
 
     public WebServer webServer;
