@@ -3,10 +3,18 @@ package com.nitdgp.arka.psync;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Environment;
 import android.os.IBinder;
 import android.util.Log;
 
 import java.io.IOException;
+
+import bishakh.psync.Controller;
+import bishakh.psync.Discoverer;
+import bishakh.psync.FileManager;
+import bishakh.psync.FileTransporter;
+import bishakh.psync.WebServer;
+
 
 public class SyncService extends Service {
 
@@ -15,8 +23,9 @@ public class SyncService extends Service {
     private static final int syncInterval = 5;
     private static final int maxRunningDownloads = 5;
 
-    private static String syncDirectory = "/DMS/sync/";
-    private static String databaseDirectory = "/DMS/Working/";
+    private static String sdcard = Environment.getExternalStorageDirectory().toString();
+    private static String syncDirectory = sdcard + "/DMS/Working/";
+    private static String databaseDirectory = sdcard +  "/DMS/";
     private static String databaseName = "fileDB.txt";
 
     public WebServer webServer;
@@ -28,7 +37,7 @@ public class SyncService extends Service {
     private final IBinder syncServiceBinder = new SyncServiceBinder();
 
     public SyncService() {
-        discoverer = new Discoverer(BROADCAST_IP, PORT, this);
+        discoverer = new Discoverer(BROADCAST_IP, PORT);
         fileManager = new FileManager(databaseName, databaseDirectory, syncDirectory);
         fileTransporter = new FileTransporter(syncDirectory);
         controller = new Controller(discoverer, fileManager, fileTransporter, syncInterval, maxRunningDownloads);
