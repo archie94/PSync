@@ -37,9 +37,6 @@ public class Sync extends AppCompatActivity {
     private static final int syncInterval = 5;
     private static final int maxRunningDownloads = 5;
 
-    private static String syncDirectory = "/DMS/sync/";
-    private static String databaseDirectory = "/DMS/Working/";
-    private static String databaseName = "fileDB.txt";
 
     SyncService syncService;
     boolean syncServiceBound = false;
@@ -48,11 +45,7 @@ public class Sync extends AppCompatActivity {
     PeerListUIThread peerListUIThread = new PeerListUIThread(this);
     ActiveDownloadsListUIThread activeDownloadsListUIThread = new ActiveDownloadsListUIThread(this);
 
-    private WebServer webServer;
-    Discoverer discoverer = new Discoverer(BROADCAST_IP, PORT, this);
-    FileManager fileManager = new FileManager(databaseName, databaseDirectory, syncDirectory);
-    FileTransporter fileTransporter = new FileTransporter(syncDirectory);
-    Controller controller = new Controller(discoverer, fileManager, fileTransporter, syncInterval, maxRunningDownloads);
+
     /* Methods */
     public void displayToast(String msg){
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
@@ -104,21 +97,11 @@ public class Sync extends AppCompatActivity {
         startSync.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                discoverer.startDiscoverer();
-                fileManager.startFileManager();
-                controller.startController();
-                startPeerListUIThread();
-                startActiveDownloadsListUIThread();
             }
         });
         stopSync.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                discoverer.stopDiscoverer();
-                fileManager.stopFileManager();
-                controller.stopController();
-                stopPeerListUIThread();
-                stopActiveDownloadsListUIThread();
             }
         });
 
@@ -279,9 +262,9 @@ public class Sync extends AppCompatActivity {
                         final List<String> fileNameList = new ArrayList<String>();
                         final List<Long> downloadedSizeList = new ArrayList<Long>();
                         final List<Long> fileSizeList = new ArrayList<Long>();
-                        for(Thread t : fileTransporter.ongoingDownloadThreads.keySet()) {
-                            fileNameList.add(fileTransporter.ongoingDownloadThreads.get(t).fileID);
-                            downloadedSizeList.add(fileTransporter.ongoingDownloadThreads.get(t).getPresentByte());
+                        for(Thread t : syncService.fileTransporter.ongoingDownloadThreads.keySet()) {
+                            fileNameList.add(syncService.fileTransporter.ongoingDownloadThreads.get(t).fileID);
+                            downloadedSizeList.add(syncService.fileTransporter.ongoingDownloadThreads.get(t).getPresentByte());
                             fileSizeList.add((long)0);
                         }
                         ActiveDownloadsAdapter activeDownloadsAdapter = new ActiveDownloadsAdapter(context,
